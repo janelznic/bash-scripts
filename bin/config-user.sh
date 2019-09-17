@@ -16,8 +16,8 @@ if [ ! -f ~/.vimrc ]; then
 fi
 
 # Bash aliases
-echo "alias ll='ls -la'" >> .bashrc
-echo "alias e='exit'" >> .bashrc
+echo "alias ll='ls -la'" >> ~/.bashrc
+echo "alias e='exit'" >> ~/.bashrc
 
 # Git
 git config --global user.name "${FULLNAME}"
