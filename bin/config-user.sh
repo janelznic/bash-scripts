@@ -2,7 +2,7 @@
 
 # Reading input variables
 FULLNAME=$(getent passwd $USER | cut -d ':' -f 5 | cut -d ',' -f 1)
-read -p "Your e-mail: " EMAIL
+read -p "Your e-mail for Git: " GIT_EMAIL
 
 # SSH
 mkdir ~/.ssh
@@ -21,7 +21,7 @@ echo "alias e='exit'" >> .bashrc
 
 # Git
 git config --global user.name "${FULLNAME}"
-git config --global user.email "${EMAIL}"
+git config --global user.email "${GIT_EMAIL}"
 git config --global color.ui auto
 
 git config --global alias.co checkout
