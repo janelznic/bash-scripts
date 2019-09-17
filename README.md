@@ -7,7 +7,7 @@ bash-scripts
 ## config-user.sh
 * Set up basic user configuration for SSH, Vim, Bash (aliases), Git & NPM
 ```bash
-curl -sL https://raw.githubusercontent.com/janelznic/bash-scripts/master/bin/sshfsall.sh | bash -
+curl -sL https://raw.githubusercontent.com/janelznic/bash-scripts/master/bin/config-user.sh.sh | bash -
 ```
 
 
