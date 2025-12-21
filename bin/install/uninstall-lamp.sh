@@ -47,14 +47,25 @@ fi
 remove_test_vhost_symlink
 [ "$PURGE" = "true" ] && purge_test_vhost_dir
 
-# Purge packages on --purge
+# Always uninstall packages (remove but keep configs)
+sudo apt-get update -y || true
+sudo apt-get remove -y apache2 php php-fpm php-curl php-mbstring php-intl php-gd php-xml php-zip php-bcmath php-soap php-mysql mysql-server mariadb-server phpmyadmin || true
+sudo apt-get autoremove -y || true
+log "Packages removed and dependencies autoremoved."
+
+# On --purge, deep clean logs, data and configs
 if [ "$PURGE" = "true" ]; then
-  if [ "$NON_INTERACTIVE" = "true" ] || confirm "Purge Apache, PHP, MySQL/MariaDB, phpMyAdmin packages?"; then
-    sudo apt-get update -y || true
-    sudo apt-get purge -y apache2 php php-fpm php-curl php-mbstring php-intl php-gd php-xml php-zip php-bcmath php-soap php-mysql mysql-server mariadb-server phpmyadmin || true
-    sudo apt-get autoremove -y || true
-    log "Packages purged and dependencies autoremoved."
-  fi
+  sudo apt-get purge -y apache2 php php-fpm php-curl php-mbstring php-intl php-gd php-xml php-zip php-bcmath php-soap php-mysql mysql-server mariadb-server phpmyadmin || true
+  sudo apt-get autoremove -y || true
+  # Remove logs and data directories
+  sudo rm -rf /var/log/apache2 || true
+  sudo rm -rf /var/log/mysql /var/log/mariadb || true
+  sudo rm -rf /var/lib/mysql /var/lib/mariadb || true
+  # Remove phpMyAdmin files if present
+  sudo rm -rf /usr/share/phpmyadmin || true
+  # Remove all managed vhosts recorded by installer
+  remove_all_managed_vhosts
+  log "Purged logs, data directories, phpMyAdmin, and managed vhosts."
 fi
 
 # Restart apache to apply removal of confs (if still installed)

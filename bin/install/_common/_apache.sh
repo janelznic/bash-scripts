@@ -50,6 +50,7 @@ symlink_test_vhost_into_user_dir() {
   src="$(TEST_VHOST_BASE)/conf/httpd.conf"
   dst="$(APACHE_USER_VHOSTS_DIR)/test.conf"
   symlink_force "$src" "$dst"
+  record_managed_vhost "test.conf"
 }
 
 add_hosts_entry_if_missing() {
@@ -83,6 +84,37 @@ purge_test_vhost_dir() {
   if [ -d "$base" ]; then
     rm -rf "$base"
     log "Purged test site directory: $base"
+  fi
+}
+
+# Managed vhosts manifest helpers
+_managed_manifest_path() {
+  echo "$(APACHE_USER_VHOSTS_DIR)/.managed_vhosts"
+}
+
+record_managed_vhost() {
+  local name="$1"
+  ensure_dir "$(APACHE_USER_VHOSTS_DIR)"
+  local mf; mf="$(_managed_manifest_path)"
+  if ! grep -qxF "$name" "$mf" 2>/dev/null; then
+    echo "$name" >> "$mf"
+    log "Recorded managed vhost: $name"
+  fi
+}
+
+remove_all_managed_vhosts() {
+  local mf; mf="$(_managed_manifest_path)"
+  if [ -f "$mf" ]; then
+    while IFS= read -r name; do
+      [ -z "$name" ] && continue
+      local path="$(APACHE_USER_VHOSTS_DIR)/$name"
+      if [ -L "$path" ] || [ -e "$path" ]; then
+        rm -f "$path"
+        log "Removed managed vhost: $path"
+      fi
+    done < "$mf"
+    rm -f "$mf"
+    log "Cleared managed vhosts manifest."
   fi
 }
 

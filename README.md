@@ -48,8 +48,8 @@ macOS (requires Homebrew and sudo):
 cd ~/git/bash-scripts/bin/install
 sudo ./install-mamp.sh            # install and configure (prompts for MySQL root password)
 sudo ./install-mamp.sh --mysql-root-password mysecret  # provide password via flag
-sudo ./uninstall-mamp.sh          # stop services, remove created resources
-sudo ./uninstall-mamp.sh --purge  # additionally uninstall Homebrew httpd/php/mysql
+sudo ./uninstall-mamp.sh          # uninstall Homebrew httpd/php/mysql and remove created resources
+sudo ./uninstall-mamp.sh --purge  # deep clean: remove logs, caches, MySQL data, phpMyAdmin, managed vhosts
 ```
 
 Debian 13 (requires sudo):
@@ -57,8 +57,8 @@ Debian 13 (requires sudo):
 cd ~/git/bash-scripts/bin/install
 sudo ./install-lamp.sh            # install and configure (prompts for MySQL root password)
 sudo ./install-lamp.sh --mysql-root-password mysecret  # provide password via flag
-sudo ./uninstall-lamp.sh          # stop services, remove created resources
-sudo ./uninstall-lamp.sh --purge  # additionally purge apt packages
+sudo ./uninstall-lamp.sh          # remove Apache/PHP/MySQL/phpMyAdmin packages
+sudo ./uninstall-lamp.sh --purge  # deep clean: purge packages, remove logs, data, phpMyAdmin, managed vhosts
 ```
 
 ### Notes
