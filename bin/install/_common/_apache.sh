@@ -60,6 +60,32 @@ add_hosts_entry_if_missing() {
   fi
 }
 
+# Common cleanup helpers
+remove_hosts_entry() {
+  local host="${1:-test.localhost}"
+  if grep -qE "\s$host(\s|$)" /etc/hosts; then
+    sudo sed -i.bak "/$(printf '%s' "$host" | sed 's/[][$.*^|+?(){}\\]/\\&/g')/d" /etc/hosts
+    log "Removed hosts entry for $host"
+  fi
+}
+
+remove_test_vhost_symlink() {
+  local link
+  link="$(APACHE_USER_VHOSTS_DIR)/test.conf"
+  if [ -L "$link" ] || [ -e "$link" ]; then
+    rm -f "$link"
+    log "Removed vhost symlink: $link"
+  fi
+}
+
+purge_test_vhost_dir() {
+  local base; base="$(TEST_VHOST_BASE)"
+  if [ -d "$base" ]; then
+    rm -rf "$base"
+    log "Purged test site directory: $base"
+  fi
+}
+
 # macOS Homebrew httpd paths and configuration
 apache_mac_paths() {
   local brew_prefix; brew_prefix=$(brew --prefix)

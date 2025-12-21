@@ -37,3 +37,56 @@ Notes:
   - They modify system/service configuration and may require sudo/root privileges.
 EOF
 }
+
+print_help_uninstall_mamp() {
+cat <<'EOF'
+Name: MAMP Uninstaller (macOS)
+
+Description:
+  Stops services and removes resources created by the MAMP installer.
+
+Author:
+  Jan Elznic <jan@elznic.com>, https://janelznic.cz
+
+Usage:
+  sudo bin/install/uninstall-mamp.sh [--purge] [--non-interactive]
+
+Options:
+  --help             Show this help
+  --purge            Remove all created resources and uninstall packages (httpd, php, mysql)
+  --non-interactive  Skip confirmations
+
+Removes:
+  - Brew services: httpd, php, mysql (stopped always; uninstalled with --purge)
+  - Test vhost symlink and site at ~/www/test (entire directory on --purge)
+  - Hosts entry for test.localhost
+  - phpMyAdmin files under $(brew --prefix)/var/www/phpmyadmin (on --purge)
+EOF
+}
+
+print_help_uninstall_lamp() {
+cat <<'EOF'
+Name: LAMP Uninstaller (Debian 13)
+
+Description:
+  Stops services and removes resources created by the LAMP installer.
+
+Author:
+  Jan Elznic <jan@elznic.com>, https://janelznic.cz
+
+Usage:
+  sudo bin/install/uninstall-lamp.sh [--purge] [--non-interactive]
+
+Options:
+  --help             Show this help
+  --purge            Remove all created resources and purge packages (apache2, php, mysql/mariadb, phpmyadmin)
+  --non-interactive  Skip confirmations
+
+Removes:
+  - Services: apache2, php-fpm, mysql/mariadb (stopped always; purged with --purge)
+  - Test vhost symlink and site at ~/www/test (entire directory on --purge)
+  - Hosts entry for test.localhost
+  - Apache confs: user-vhosts, php-fpm-handler, phpmyadmin (disabled and removed)
+EOF
+}
+

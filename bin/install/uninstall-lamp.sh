@@ -4,32 +4,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/_common/_utils.sh"
 . "$SCRIPT_DIR/_common/_apache.sh"
+. "$SCRIPT_DIR/_common/_help.sh"
 
-show_help() {
-cat <<'EOF'
-Name: LAMP Uninstaller (Debian 13)
-
-Description:
-  Stops services and removes resources created by the LAMP installer.
-
-Author:
-  Jan Elznic <jan@elznic.com>, https://janelznic.cz
-
-Usage:
-  sudo bin/install/uninstall-lamp.sh [--purge] [--non-interactive]
-
-Options:
-  --help             Show this help
-  --purge            Remove all created resources and purge packages (apache2, php, mysql/mariadb, phpmyadmin)
-  --non-interactive  Skip confirmations
-
-Removes:
-  - Services: apache2, php-fpm, mysql/mariadb (stopped always; purged with --purge)
-  - Test vhost symlink and site at ~/www/test (entire directory on --purge)
-  - Hosts entry for test.localhost
-  - Apache confs: user-vhosts, php-fpm-handler, phpmyadmin (disabled and removed)
-EOF
-}
+show_help() { print_help_uninstall_lamp; }
 
 NON_INTERACTIVE="false"
 PURGE="false"
@@ -63,28 +40,12 @@ sudo rm -f /etc/apache2/conf-available/user-vhosts.conf || true
 sudo rm -f /etc/apache2/conf-available/php-fpm-handler.conf || true
 sudo rm -f /etc/apache2/conf-available/phpmyadmin.conf || true
 
-# Remove hosts entry
-if grep -qE "\stest.localhost(\s|$)" /etc/hosts; then
-  if [ "$NON_INTERACTIVE" = "true" ] || confirm "Remove hosts entry for test.localhost?"; then
-    sudo sed -i.bak "/test\.localhost/d" /etc/hosts
-    log "Removed hosts entry for test.localhost"
-  fi
+# Remove hosts entry and vhost symlink; purge dir if requested
+if [ "$NON_INTERACTIVE" = "true" ] || confirm "Remove hosts entry for test.localhost?"; then
+  remove_hosts_entry "test.localhost"
 fi
-
-# Remove test vhost symlink and directory
-VHOST_SYMLINK="$(APACHE_USER_VHOSTS_DIR)/test.conf"
-TEST_DIR="$(TEST_VHOST_BASE)"
-if [ -L "$VHOST_SYMLINK" ] || [ -e "$VHOST_SYMLINK" ]; then
-  rm -f "$VHOST_SYMLINK"
-  log "Removed vhost symlink: $VHOST_SYMLINK"
-fi
-
-if [ "$PURGE" = "true" ]; then
-  if [ -d "$TEST_DIR" ]; then
-    rm -rf "$TEST_DIR"
-    log "Purged test site directory: $TEST_DIR"
-  fi
-fi
+remove_test_vhost_symlink
+[ "$PURGE" = "true" ] && purge_test_vhost_dir
 
 # Purge packages on --purge
 if [ "$PURGE" = "true" ]; then
