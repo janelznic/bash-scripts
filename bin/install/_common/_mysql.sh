@@ -25,13 +25,20 @@ SQL
     return
   fi
 
-  if command -v mariadb >/dev/null 2>&1 || command -v mysql >/dev/null 2>&1; then
+  if command -v mariadb >/dev/null 2>&1; then
     # MariaDB often uses unix_socket plugin for root. Switch to password.
-    sudo mariadb -u root <<SQL || sudo mysql -u root <<SQL
+    sudo mariadb -u root <<SQL || true
 ALTER USER 'root'@'localhost' IDENTIFIED BY '$pass';
 FLUSH PRIVILEGES;
 SQL
     log "MariaDB root password configured."
+    return
+  elif command -v mysql >/dev/null 2>&1; then
+    sudo mysql -u root <<SQL || true
+ALTER USER 'root'@'localhost' IDENTIFIED BY '$pass';
+FLUSH PRIVILEGES;
+SQL
+    log "MySQL root password configured (fallback)."
     return
   fi
 
