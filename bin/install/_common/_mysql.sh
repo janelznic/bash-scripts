@@ -12,13 +12,13 @@ configure_mysql_root_password() {
 
   if command -v mysql >/dev/null 2>&1; then
     # Try MySQL 8+ component uninstall for validate_password (may fail harmlessly)
-    mysql --protocol=socket -uroot <<SQL || true
+    mysql -h 127.0.0.1 -uroot <<SQL || true
 UNINSTALL COMPONENT 'file://component_validate_password';
 SQL
 
     # Attempt password set using mysql_native_password
-    mysql --protocol=socket -uroot <<SQL || true
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$pass';
+    mysql -h 127.0.0.1 -uroot <<SQL || true
+ALTER USER 'root'@'localhost' IDENTIFIED BY '$pass';
 FLUSH PRIVILEGES;
 SQL
     log "MySQL root password configured."
@@ -34,7 +34,7 @@ SQL
     log "MariaDB root password configured."
     return
   elif command -v mysql >/dev/null 2>&1; then
-    sudo mysql -u root <<SQL || true
+    mysql -h 127.0.0.1 -uroot <<SQL || true
 ALTER USER 'root'@'localhost' IDENTIFIED BY '$pass';
 FLUSH PRIVILEGES;
 SQL

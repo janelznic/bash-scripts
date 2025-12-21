@@ -9,7 +9,11 @@ PHPMYADMIN_DOWNLOAD_URL="https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-
 
 install_phpmyadmin_mac() {
   require_command curl
-  local target_root="$(brew --prefix)/var/www/phpmyadmin"
+  local brew_prefix
+  brew_prefix=$(brew --prefix)
+  # Ensure parent web root exists first
+  ensure_dir "$brew_prefix/var/www"
+  local target_root="$brew_prefix/var/www/phpmyadmin"
   ensure_dir "$target_root"
 
   local tmp="$(mktemp -d)"
@@ -17,7 +21,14 @@ install_phpmyadmin_mac() {
   tar -xzf "$tmp/pma.tar.gz" -C "$tmp"
   local extracted
   extracted=$(find "$tmp" -maxdepth 1 -type d -name "phpMyAdmin-*" | head -n1)
-  rsync -a "$extracted/" "$target_root/"
+  if [ -z "$extracted" ]; then
+    die "Failed to extract phpMyAdmin archive."
+  fi
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -a "$extracted/" "$target_root/"
+  else
+    cp -R "$extracted/"* "$target_root/"
+  fi
   rm -rf "$tmp"
 
   # Basic config.inc.php with random blowfish secret
@@ -51,7 +62,14 @@ install_phpmyadmin_debian() {
     tar -xzf "$tmp/pma.tar.gz" -C "$tmp"
     local extracted
     extracted=$(find "$tmp" -maxdepth 1 -type d -name "phpMyAdmin-*" | head -n1)
-    sudo rsync -a "$extracted/" "$target_root/"
+    if [ -z "$extracted" ]; then
+      die "Failed to extract phpMyAdmin archive."
+    fi
+    if command -v rsync >/dev/null 2>&1; then
+      sudo rsync -a "$extracted/" "$target_root/"
+    else
+      sudo cp -R "$extracted/"* "$target_root/"
+    fi
     rm -rf "$tmp"
   fi
 
