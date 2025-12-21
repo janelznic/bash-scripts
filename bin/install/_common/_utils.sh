@@ -96,13 +96,12 @@ prompt_mysql_root_password() {
     return
   fi
   printf "Enter MySQL root password: "
-  read -r -s MYSQL_ROOT_PASSWORD
-  echo ""
+  read -r MYSQL_ROOT_PASSWORD
   if [ -z "$MYSQL_ROOT_PASSWORD" ]; then
     MYSQL_ROOT_PASSWORD="$default"
     warn "Empty input; defaulting MySQL root password to: $MYSQL_ROOT_PASSWORD"
   else
-    log "MySQL root password captured."
+    log "MySQL root password captured: $MYSQL_ROOT_PASSWORD"
   fi
 }
 

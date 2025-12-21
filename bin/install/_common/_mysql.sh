@@ -50,7 +50,7 @@ install_mysql_mac() {
   brew install mysql || true
   brew services start mysql || brew services restart mysql || true
   log "MySQL installed and started on macOS."
-  configure_mysql_root_password "$MYSQL_ROOT_PASSWORD_DEFAULT"
+  configure_mysql_root_password "$MYSQL_ROOT_PASSWORD"
 }
 
 install_mysql_debian() {
@@ -64,5 +64,5 @@ install_mysql_debian() {
     sudo systemctl enable --now mariadb || sudo systemctl enable --now mysql || true
   fi
   log "MySQL/MariaDB installed and started on Debian."
-  configure_mysql_root_password "$MYSQL_ROOT_PASSWORD_DEFAULT"
+  configure_mysql_root_password "$MYSQL_ROOT_PASSWORD"
 }
