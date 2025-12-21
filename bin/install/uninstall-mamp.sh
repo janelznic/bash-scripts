@@ -24,15 +24,37 @@ log "Starting MAMP uninstall on macOS."
 
 require_command brew
 
+# Ensure Homebrew commands run as the owning user even if script is run with sudo
+brew_as_user() {
+  if [ "$(id -u)" -eq 0 ] && [ -n "${SUDO_USER:-}" ]; then
+    sudo -u "$SUDO_USER" brew "$@"
+  else
+    brew "$@"
+  fi
+}
+brew_services_as_user() {
+  if [ "$(id -u)" -eq 0 ] && [ -n "${SUDO_USER:-}" ]; then
+    sudo -u "$SUDO_USER" brew services "$@"
+  else
+    brew services "$@"
+  fi
+}
+
 if [ "$CHECK_ONLY" = "true" ]; then
   log "Check-only mode: verifying uninstall state without making changes."
-  # Checks: commands absent (avoid set -e by using if/else)
-  if command -v httpd >/dev/null 2>&1; then st=1; else st=0; fi; check_result "httpd binary absent" "$st" "Found in PATH"
-  if command -v php   >/dev/null 2>&1; then st=1; else st=0; fi; check_result "php binary absent" "$st" "Found in PATH"
-  if command -v mysql >/dev/null 2>&1; then st=1; else st=0; fi; check_result "mysql binary absent" "$st" "Found in PATH"
+  # Checks: Homebrew-managed binaries absent (ignore system-provided ones)
+  BREW_PREFIX=$(brew --prefix)
+  bin_in_brew() {
+    local b="$1"; local p
+    p=$(command -v "$b" 2>/dev/null || true)
+    [ -n "$p" ] && [[ "$p" == "$BREW_PREFIX"* ]]
+  }
+  if bin_in_brew httpd; then st=1; else st=0; fi; check_result "httpd binary absent" "$st" "Found in PATH"
+  if bin_in_brew php;   then st=1; else st=0; fi; check_result "php binary absent"   "$st" "Found in PATH"
+  if bin_in_brew mysql; then st=1; else st=0; fi; check_result "mysql binary absent" "$st" "Found in PATH"
 
   # Services stopped
-  brew services list >/tmp/_brew_services_$$ 2>/dev/null || true
+  brew_services_as_user list >/tmp/_brew_services_$$ 2>/dev/null || true
   grep -E '^httpd\s' /tmp/_brew_services_$$ >/dev/null 2>&1; svc_httpd=$?
   grep -E '^php\s' /tmp/_brew_services_$$ >/dev/null 2>&1; svc_php=$?
   grep -E '^mysql\s' /tmp/_brew_services_$$ >/dev/null 2>&1; svc_mysql=$?
@@ -64,11 +86,10 @@ if [ "$CHECK_ONLY" = "true" ]; then
   exit 0
 fi
 
-# Stop services (try non-sudo, then sudo)
-stop_brew_service() { brew services stop "$1" || sudo brew services stop "$1" || true; }
-stop_brew_service httpd
-stop_brew_service php
-stop_brew_service mysql
+# Stop services (run as Homebrew user)
+brew_services_as_user stop httpd || true
+brew_services_as_user stop php || true
+brew_services_as_user stop mysql || true
 
 # Paths
 BREW_PREFIX=$(brew --prefix)
@@ -91,9 +112,9 @@ PHP_LOG_DIR="$BREW_PREFIX/var/log"
 MYSQL_DATA_DIR="$BREW_PREFIX/var/mysql"
 
 # Always uninstall packages (even without --purge)
-brew uninstall httpd || true
-brew uninstall php || true
-brew uninstall mysql || true
+brew_as_user uninstall httpd || true
+brew_as_user uninstall php || true
+brew_as_user uninstall mysql || true
 log "Homebrew packages uninstalled (httpd, php, mysql)."
 
 if [ "$PURGE" = "true" ]; then
