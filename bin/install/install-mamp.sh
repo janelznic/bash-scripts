@@ -8,12 +8,15 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/_common/_php.sh"
 . "$SCRIPT_DIR/_common/_mysql.sh"
 . "$SCRIPT_DIR/_common/_phpmyadmin.sh"
+. "$SCRIPT_DIR/_common/_checks.sh"
 
 NON_INTERACTIVE="false"
+CHECK_ONLY="false"
 for arg in "$@"; do
   case "$arg" in
     --help) print_help; exit 0;;
     --non-interactive) NON_INTERACTIVE="true";;
+    --check) CHECK_ONLY="true";;
   esac
 done
 
@@ -24,6 +27,12 @@ prompt_mysql_root_password "aaa" "$NON_INTERACTIVE"
 log "Starting MAMP setup for macOS (Apple Silicon)."
 
 require_command brew
+
+if [ "$CHECK_ONLY" = "true" ]; then
+  log "Check-only mode: verifying install state without making changes."
+  check_macos_mamp_state "installed"
+  exit 0
+fi
 
 if [ "$NON_INTERACTIVE" != "true" ]; then
   confirm "Proceed to install Apache, PHP, MySQL, and phpMyAdmin via Homebrew?" || die "Aborted by user."

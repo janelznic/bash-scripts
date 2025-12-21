@@ -8,12 +8,15 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/_common/_php.sh"
 . "$SCRIPT_DIR/_common/_mysql.sh"
 . "$SCRIPT_DIR/_common/_phpmyadmin.sh"
+. "$SCRIPT_DIR/_common/_checks.sh"
 
 NON_INTERACTIVE="false"
+CHECK_ONLY="false"
 for arg in "$@"; do
   case "$arg" in
     --help) print_help; exit 0;;
     --non-interactive) NON_INTERACTIVE="true";;
+    --check) CHECK_ONLY="true";;
   esac
 done
 
@@ -22,6 +25,12 @@ parse_mysql_root_password "$@"
 prompt_mysql_root_password "aaa" "$NON_INTERACTIVE"
 
 log "Starting LAMP setup for Debian 13 Trixie."
+
+if [ "$CHECK_ONLY" = "true" ]; then
+  log "Check-only mode: verifying install state without making changes."
+  check_debian_lamp_state "installed"
+  exit 0
+fi
 
 if [ "$NON_INTERACTIVE" != "true" ]; then
   confirm "Proceed to install Apache2, PHP-FPM + common extensions, MySQL/MariaDB, and phpMyAdmin via apt?" || die "Aborted by user."

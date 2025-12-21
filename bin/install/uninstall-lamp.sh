@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/_common/_utils.sh"
 . "$SCRIPT_DIR/_common/_apache.sh"
 . "$SCRIPT_DIR/_common/_help.sh"
+. "$SCRIPT_DIR/_common/_checks.sh"
 
 show_help() { print_help_uninstall_lamp; }
 
@@ -24,44 +25,7 @@ log "Starting LAMP uninstall on Debian."
 
 if [ "$CHECK_ONLY" = "true" ]; then
   log "Check-only mode: verifying uninstall state without making changes."
-  # Binaries absent
-  if command -v apache2 >/dev/null 2>&1; then st=1; else st=0; fi; check_result "apache2 binary absent" "$st" "Found in PATH"
-  if command -v php     >/dev/null 2>&1; then st=1; else st=0; fi; check_result "php binary absent" "$st" "Found in PATH"
-  if command -v php-fpm >/dev/null 2>&1; then st=1; else st=0; fi; check_result "php-fpm binary absent" "$st" "Found in PATH"
-  if command -v mysql   >/dev/null 2>&1; then st=1; else st=0; fi; check_result "mysql binary absent" "$st" "Found in PATH"
-  if command -v mariadb >/dev/null 2>&1; then st=1; else st=0; fi; check_result "mariadb binary absent" "$st" "Found in PATH"
-
-  # Services inactive/not found
-  systemctl is-active --quiet apache2;  if [ $? -ne 0 ]; then st=0; else st=1; fi; check_result "apache2 service inactive/absent" "$st" "Service active"
-  systemctl is-active --quiet mysql;    if [ $? -ne 0 ]; then st=0; else st=1; fi; check_result "mysql service inactive/absent" "$st" "Service active"
-  systemctl is-active --quiet mariadb;  if [ $? -ne 0 ]; then st=0; else st=1; fi; check_result "mariadb service inactive/absent" "$st" "Service active"
-  # php-fpm wildcard
-  if compgen -G "/lib/systemd/system/php*-fpm.service" >/dev/null; then
-    for s in /lib/systemd/system/php*-fpm.service; do
-      svc=$(basename "$s" .service)
-      systemctl is-active --quiet "$svc"; if [ $? -ne 0 ]; then st=0; else st=1; fi; check_result "$svc inactive/absent" "$st" "Service active"
-    done
-  else
-    check_result "php-fpm services inactive/absent" 0
-  fi
-
-  # Ports not listening
-  if is_port_listening 80;   then st=1; else st=0; fi; check_result "Port 80 not listening" "$st" "Listener detected"
-  if is_port_listening 3306; then st=1; else st=0; fi; check_result "Port 3306 not listening" "$st" "Listener detected"
-
-  # Paths removed
-  if [ -e "/usr/share/phpmyadmin" ]; then st=1; else st=0; fi; check_result "phpMyAdmin directory removed" "$st" "Exists"
-  if [ -e "/var/log/apache2" ]; then st=1; else st=0; fi;     check_result "Apache logs removed" "$st" "Exists"
-  if [ -e "/var/lib/mysql" ]; then st=1; else st=0; fi;       check_result "MySQL data dir removed" "$st" "Exists"
-  if [ -e "/var/lib/mariadb" ]; then st=1; else st=0; fi;     check_result "MariaDB data dir removed" "$st" "Exists"
-
-  # Hosts entry removed
-  if has_hosts_entry "test.localhost"; then st=1; else st=0; fi; check_result "Hosts entry removed (test.localhost)" "$st" "Entry present"
-
-  # Managed vhosts removed
-  if no_managed_vhosts_present; then st=0; else st=1; fi; check_result "Managed vhosts removed" "$st" "Managed vhosts still present"
-
-  print_checks_summary
+  check_debian_lamp_state "uninstalled"
   exit 0
 fi
 

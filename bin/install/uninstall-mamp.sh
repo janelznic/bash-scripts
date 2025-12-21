@@ -5,6 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/_common/_utils.sh"
 . "$SCRIPT_DIR/_common/_apache.sh"
 . "$SCRIPT_DIR/_common/_help.sh"
+. "$SCRIPT_DIR/_common/_brew.sh"
+. "$SCRIPT_DIR/_common/_checks.sh"
 
 show_help() { print_help_uninstall_mamp; }
 
@@ -51,47 +53,7 @@ brew_prefix() {
 
 if [ "$CHECK_ONLY" = "true" ]; then
   log "Check-only mode: verifying uninstall state without making changes."
-  # Checks: Homebrew-managed binaries absent (ignore system-provided ones)
-  BREW_PREFIX=$(brew_prefix)
-  bin_in_brew() {
-    local b="$1"; local p
-    p=$(command -v "$b" 2>/dev/null || true)
-    [ -n "$p" ] && [[ "$p" == "$BREW_PREFIX"* ]]
-  }
-  if bin_in_brew httpd; then st=1; else st=0; fi; check_result "httpd binary absent" "$st" "Found in PATH"
-  if bin_in_brew php;   then st=1; else st=0; fi; check_result "php binary absent"   "$st" "Found in PATH"
-  if bin_in_brew mysql; then st=1; else st=0; fi; check_result "mysql binary absent" "$st" "Found in PATH"
-
-  # Services stopped
-  brew_services_as_user list >/tmp/_brew_services_$$ 2>/dev/null || true
-  if grep -E '^httpd\s' /tmp/_brew_services_$$ >/dev/null 2>&1; then svc_httpd=0; else svc_httpd=1; fi
-  if grep -E '^php\s' /tmp/_brew_services_$$  >/dev/null 2>&1; then svc_php=0;   else svc_php=1;   fi
-  if grep -E '^mysql\s' /tmp/_brew_services_$$>/dev/null 2>&1; then svc_mysql=0; else svc_mysql=1; fi
-  rm -f /tmp/_brew_services_$$
-  if [ $svc_httpd -ne 0 ]; then st=0; else st=1; fi; check_result "httpd service stopped/absent" "$st" "Service still listed"
-  if [ $svc_php   -ne 0 ]; then st=0; else st=1; fi; check_result "php service stopped/absent" "$st" "Service still listed"
-  if [ $svc_mysql -ne 0 ]; then st=0; else st=1; fi; check_result "mysql service stopped/absent" "$st" "Service still listed"
-
-  # Ports not listening: 80 (httpd), 3306 (mysql)
-  if is_port_listening 80; then st=1; else st=0; fi;   check_result "Port 80 not listening" "$st" "Listener detected"
-  if is_port_listening 3306; then st=1; else st=0; fi; check_result "Port 3306 not listening" "$st" "Listener detected"
-
-  # Paths removed
-  BREW_PREFIX=$(brew_prefix)
-  PMA_DIR="$BREW_PREFIX/var/www/phpmyadmin"
-  HTTPD_LOG_DIR="$BREW_PREFIX/var/log/httpd"
-  MYSQL_DATA_DIR="$BREW_PREFIX/var/mysql"
-  if [ -e "$PMA_DIR" ]; then st=1; else st=0; fi;        check_result "phpMyAdmin directory removed" "$st" "Exists: $PMA_DIR"
-  if [ -e "$HTTPD_LOG_DIR" ]; then st=1; else st=0; fi;  check_result "httpd logs removed" "$st" "Exists: $HTTPD_LOG_DIR"
-  if [ -e "$MYSQL_DATA_DIR" ]; then st=1; else st=0; fi; check_result "MySQL data dir removed" "$st" "Exists: $MYSQL_DATA_DIR"
-
-  # Hosts entry removed
-  if has_hosts_entry "test.localhost"; then st=1; else st=0; fi; check_result "Hosts entry removed (test.localhost)" "$st" "Entry present"
-
-  # Managed vhosts removed
-  if no_managed_vhosts_present; then st=0; else st=1; fi; check_result "Managed vhosts removed" "$st" "Managed vhosts still present"
-
-  print_checks_summary
+  check_macos_mamp_state "uninstalled"
   exit 0
 fi
 
