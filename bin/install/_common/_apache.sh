@@ -159,6 +159,7 @@ configure_apache_mac() {
     conf="$brew_prefix/etc/httpd/httpd.conf"
     extra="$brew_prefix/etc/httpd/extra"
   fi
+  local docroot="$brew_prefix/var/www"
 
   # Ensure required modules are loaded in httpd.conf
   sudo sed -i.bak \
@@ -175,6 +176,13 @@ configure_apache_mac() {
     sudo sed -i '' -e '/^Listen 8080$/d' "$conf" || true
   else
     echo "Listen 80" | sudo tee -a "$conf" >/dev/null
+  fi
+
+  # Set global ServerName to suppress FQDN warning
+  if grep -qE '^#?ServerName\s' "$conf"; then
+    sudo sed -i '' -E 's|^#?ServerName\s.*|ServerName localhost|' "$conf"
+  else
+    echo "ServerName localhost" | sudo tee -a "$conf" >/dev/null
   fi
 
   # Include user's virtualhosts directory
@@ -200,6 +208,22 @@ configure_apache_mac() {
       printf "%b" "$pma_snippet" | sudo tee -a "$conf" >/dev/null
       log "Added phpMyAdmin alias into $conf"
     fi
+  fi
+
+  # Ensure DocumentRoot directory block permits access
+  if ! grep -q "<Directory $docroot>" "$conf"; then
+    cat <<EOF | sudo tee -a "$conf" >/dev/null
+<Directory $docroot>
+  Options Indexes FollowSymLinks
+  AllowOverride All
+  Require all granted
+</Directory>
+EOF
+  fi
+
+  # Create a default index.html to avoid 403 when no index exists
+  if [ ! -f "$docroot/index.html" ]; then
+    echo "<html><body><h1>Apache is running</h1></body></html>" | sudo tee "$docroot/index.html" >/dev/null
   fi
 
   # Restart httpd via brew services (root domain for port 80)
