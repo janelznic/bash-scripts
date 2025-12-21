@@ -20,9 +20,11 @@ for arg in "$@"; do
   esac
 done
 
-# Parse and prompt for MySQL root password (shared)
-parse_mysql_root_password "$@"
-prompt_mysql_root_password "aaa" "$NON_INTERACTIVE"
+# Parse and prompt for MySQL root password (shared) unless in check-only mode
+if [ "$CHECK_ONLY" != "true" ]; then
+  parse_mysql_root_password "$@"
+  prompt_mysql_root_password "aaa" "$NON_INTERACTIVE"
+fi
 
 log "Starting MAMP setup for macOS (Apple Silicon)."
 
