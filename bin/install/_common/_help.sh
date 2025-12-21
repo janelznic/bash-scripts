@@ -20,8 +20,9 @@ Usage:
     sudo install/install-lamp.sh [options]
 
 Options:
-  --help           Show this help and exit
-  --non-interactive   Skip confirmations (use defaults)
+  --help                 Show this help and exit
+  --non-interactive      Skip confirmations (use defaults)
+  --mysql-root-password  Set MySQL root password (otherwise prompted; default 'aaa')
 
 Defaults:
   - Apache listens on localhost:80

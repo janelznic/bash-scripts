@@ -22,10 +22,11 @@ log "Starting MAMP uninstall on macOS."
 
 require_command brew
 
-# Stop services
-brew services stop httpd || true
-brew services stop php || true
-brew services stop mysql || true
+# Stop services (try non-sudo, then sudo)
+stop_brew_service() { brew services stop "$1" || sudo brew services stop "$1" || true; }
+stop_brew_service httpd
+stop_brew_service php
+stop_brew_service mysql
 
 # Paths
 BREW_PREFIX=$(brew --prefix)

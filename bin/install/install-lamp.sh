@@ -17,6 +17,10 @@ for arg in "$@"; do
   esac
 done
 
+# Parse and prompt for MySQL root password (shared)
+parse_mysql_root_password "$@"
+prompt_mysql_root_password "aaa" "$NON_INTERACTIVE"
+
 log "Starting LAMP setup for Debian 13 Trixie."
 
 if [ "$NON_INTERACTIVE" != "true" ]; then

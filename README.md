@@ -35,6 +35,7 @@ Scripts to install and uninstall Apache, PHP, MySQL, and phpMyAdmin with a ready
 - Enables modules: proxy, proxy_http, proxy_fcgi, rewrite, alias.
 - Includes VirtualHosts from `~/virtualhosts/apache2/*.conf`.
 - MySQL root password set to `aaa`.
+ - MySQL root password prompted at start (or via `--mysql-root-password` option; defaults to `aaa`).
 - phpMyAdmin served at `http://localhost/phpmyadmin`.
 - Test VirtualHost created under `~/www/test` with:
 	- Config: `~/www/test/conf/httpd.conf` → symlinked to `~/virtualhosts/apache2/test.conf`
@@ -45,7 +46,8 @@ Scripts to install and uninstall Apache, PHP, MySQL, and phpMyAdmin with a ready
 macOS (requires Homebrew and sudo):
 ```bash
 cd ~/git/bash-scripts/bin/install
-sudo ./install-mamp.sh            # install and configure
+sudo ./install-mamp.sh            # install and configure (prompts for MySQL root password)
+sudo ./install-mamp.sh --mysql-root-password mysecret  # provide password via flag
 sudo ./uninstall-mamp.sh          # stop services, remove created resources
 sudo ./uninstall-mamp.sh --purge  # additionally uninstall Homebrew httpd/php/mysql
 ```
@@ -53,7 +55,8 @@ sudo ./uninstall-mamp.sh --purge  # additionally uninstall Homebrew httpd/php/my
 Debian 13 (requires sudo):
 ```bash
 cd ~/git/bash-scripts/bin/install
-sudo ./install-lamp.sh            # install and configure
+sudo ./install-lamp.sh            # install and configure (prompts for MySQL root password)
+sudo ./install-lamp.sh --mysql-root-password mysecret  # provide password via flag
 sudo ./uninstall-lamp.sh          # stop services, remove created resources
 sudo ./uninstall-lamp.sh --purge  # additionally purge apt packages
 ```

@@ -8,7 +8,7 @@ _THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MYSQL_ROOT_PASSWORD_DEFAULT="aaa"
 
 configure_mysql_root_password() {
-  local pass="${1:-$MYSQL_ROOT_PASSWORD_DEFAULT}"
+  local pass="${1:-${MYSQL_ROOT_PASSWORD:-$MYSQL_ROOT_PASSWORD_DEFAULT}}"
 
   if command -v mysql >/dev/null 2>&1; then
     # Try MySQL 8+ component uninstall for validate_password (may fail harmlessly)

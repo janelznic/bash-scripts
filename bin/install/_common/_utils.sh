@@ -61,3 +61,47 @@ print_summary() {
   echo ""
   echo "Setup complete. Author: $_AUTHOR_NAME <$_AUTHOR_EMAIL>, $_AUTHOR_URL"
 }
+
+# MySQL root password handling (shared)
+parse_mysql_root_password() {
+  # Parses --mysql-root-password <pwd> or --mysql-root-password=<pwd>
+  local arg
+  for arg in "$@"; do
+    case "$arg" in
+      --mysql-root-password=*) MYSQL_ROOT_PASSWORD="${arg#*=}" ;;
+    esac
+  done
+  # Handle separated form
+  local i=1
+  while [ $i -le $# ]; do
+    arg="${!i}"
+    if [ "$arg" = "--mysql-root-password" ]; then
+      i=$((i+1))
+      MYSQL_ROOT_PASSWORD="${!i:-}"
+      break
+    fi
+    i=$((i+1))
+  done
+}
+
+prompt_mysql_root_password() {
+  local default="${1:-aaa}"
+  local non_interactive="${2:-false}"
+  if [ -n "${MYSQL_ROOT_PASSWORD:-}" ]; then
+    return
+  fi
+  if [ "$non_interactive" = "true" ]; then
+    MYSQL_ROOT_PASSWORD="$default"
+    log "Using default MySQL root password (non-interactive): $MYSQL_ROOT_PASSWORD"
+    return
+  fi
+  printf "Enter MySQL root password: "
+  read -r -s MYSQL_ROOT_PASSWORD
+  echo ""
+  if [ -z "$MYSQL_ROOT_PASSWORD" ]; then
+    MYSQL_ROOT_PASSWORD="$default"
+    warn "Empty input; defaulting MySQL root password to: $MYSQL_ROOT_PASSWORD"
+  else
+    log "MySQL root password captured."
+  fi
+}
