@@ -54,7 +54,7 @@ $cfg['Servers'][1]['auth_type'] = 'cookie';
 $cfg['Servers'][1]['host'] = 'localhost';
 EOF
 "
-    log "phpMyAdmin configured at $target_root"
+    printf "[INFO] phpMyAdmin configured at %s\n" "$target_root" 1>&2
   fi
 
   echo "$target_root"
@@ -97,7 +97,7 @@ $cfg['Servers'][1]['auth_type'] = 'cookie';
 $cfg['Servers'][1]['host'] = 'localhost';
 EOF
 "
-    log "phpMyAdmin configured at $target_root"
+    printf "[INFO] phpMyAdmin configured at %s\n" "$target_root" 1>&2
   fi
 
   echo "$target_root"
