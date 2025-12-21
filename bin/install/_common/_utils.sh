@@ -105,3 +105,45 @@ prompt_mysql_root_password() {
     log "MySQL root password captured."
   fi
 }
+
+# ---------- Verification helpers ----------
+CHECKS_TOTAL=0
+CHECKS_OK=0
+
+check_result() {
+  local label="$1"; local ok="$2"; local detail="${3:-}"
+  CHECKS_TOTAL=$((CHECKS_TOTAL+1))
+  if [ "$ok" = "0" ]; then
+    CHECKS_OK=$((CHECKS_OK+1))
+    printf "✅ %s\n" "$label"
+  else
+    if [ -n "$detail" ]; then
+      printf "❌ %s — %s\n" "$label" "$detail"
+    else
+      printf "❌ %s\n" "$label"
+    fi
+  fi
+}
+
+command_absent() { command -v "$1" >/dev/null 2>&1; return $([ $? -ne 0 ] && echo 0 || echo 1); }
+
+path_absent() { [ ! -e "$1" ]; return $([ $? -eq 0 ] && echo 0 || echo 1); }
+
+is_port_listening() {
+  local port="$1"
+  if command -v lsof >/dev/null 2>&1; then
+    lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1
+    return $?
+  elif command -v netstat >/dev/null 2>&1; then
+    netstat -an | grep -E "\.${port} .*LISTEN" >/dev/null 2>&1
+    return $?
+  else
+    # Fallback using nc (may not be reliable for listeners)
+    return 1
+  fi
+}
+
+print_checks_summary() {
+  echo ""
+  echo "Verification summary: $CHECKS_OK/$CHECKS_TOTAL checks passed"
+}

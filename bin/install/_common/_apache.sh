@@ -70,6 +70,12 @@ remove_hosts_entry() {
   fi
 }
 
+has_hosts_entry() {
+  local host="$1"
+  grep -qE "\s$host(\s|$)" /etc/hosts
+  return $?
+}
+
 remove_test_vhost_symlink() {
   local link
   link="$(APACHE_USER_VHOSTS_DIR)/test.conf"
@@ -116,6 +122,21 @@ remove_all_managed_vhosts() {
     rm -f "$mf"
     log "Cleared managed vhosts manifest."
   fi
+}
+
+no_managed_vhosts_present() {
+  local mf; mf="$(_managed_manifest_path)"
+  if [ -f "$mf" ]; then
+    # If manifest exists and any listed file remains, return 1
+    while IFS= read -r name; do
+      [ -z "$name" ] && continue
+      local path="$(APACHE_USER_VHOSTS_DIR)/$name"
+      if [ -e "$path" ] || [ -L "$path" ]; then
+        return 1
+      fi
+    done < "$mf"
+  fi
+  return 0
 }
 
 # macOS Homebrew httpd paths and configuration
