@@ -4,11 +4,29 @@ set -euo pipefail
 # Source utils relative to this helper file (robust across CWD)
 _THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$_THIS_DIR/_utils.sh"
+# Optional brew helpers for macOS
+if [ -f "$_THIS_DIR/_brew.sh" ]; then
+  . "$_THIS_DIR/_brew.sh"
+fi
 
 MYSQL_ROOT_PASSWORD_DEFAULT="aaa"
 
 configure_mysql_root_password() {
   local pass="${1:-${MYSQL_ROOT_PASSWORD:-$MYSQL_ROOT_PASSWORD_DEFAULT}}"
+
+  wait_for_mysql_ready() {
+    local host="${1:-127.0.0.1}"
+    local port="${2:-3306}"
+    local timeout="${3:-40}"
+    local i=0
+    while [ $i -lt "$timeout" ]; do
+      if mysqladmin -h "$host" -P "$port" --protocol=tcp ping >/dev/null 2>&1; then
+        return 0
+      fi
+      sleep 1; i=$((i+1))
+    done
+    return 1
+  }
 
   if command -v mysql >/dev/null 2>&1; then
     # Try MySQL 8+ component uninstall for validate_password (may fail harmlessly)

@@ -4,6 +4,10 @@ set -euo pipefail
 # Source utils relative to this helper file (robust across CWD)
 _THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$_THIS_DIR/_utils.sh"
+# Optional brew helpers on macOS
+if command -v brew >/dev/null 2>&1 && [ -f "$_THIS_DIR/_brew.sh" ]; then
+  . "$_THIS_DIR/_brew.sh"
+fi
 
 APACHE_USER_VHOSTS_DIR() { echo "$(detect_user_home)/virtualhosts/apache2"; }
 TEST_VHOST_BASE() { echo "$(detect_user_home)/www/test"; }
@@ -149,6 +153,12 @@ configure_apache_mac() {
   require_command brew
   local brew_prefix conf extra
   read -r brew_prefix conf extra < <(apache_mac_paths)
+  # Normalize brew_prefix via helper if available
+  if command -v brew_prefix >/dev/null 2>&1; then
+    brew_prefix="$(brew_prefix)"
+    conf="$brew_prefix/etc/httpd/httpd.conf"
+    extra="$brew_prefix/etc/httpd/extra"
+  fi
 
   # Ensure required modules are loaded in httpd.conf
   sudo sed -i.bak \
@@ -159,9 +169,10 @@ configure_apache_mac() {
     -e 's|^#\?LoadModule proxy_fcgi_module.*|LoadModule proxy_fcgi_module lib/httpd/modules/mod_proxy_fcgi.so|' \
     "$conf"
 
-  # Listen on port 80
+  # Listen on port 80 (remove any 8080 lines in main conf)
   if grep -q '^Listen ' "$conf"; then
     sudo sed -i.bak -e 's/^Listen .*/Listen 80/' "$conf"
+    sudo sed -i '' -e '/^Listen 8080$/d' "$conf" || true
   else
     echo "Listen 80" | sudo tee -a "$conf" >/dev/null
   fi
@@ -191,8 +202,9 @@ configure_apache_mac() {
     fi
   fi
 
-  # Restart httpd via brew services (requires sudo for port 80)
-  sudo brew services restart httpd
+  # Restart httpd via brew services (root domain for port 80)
+  sudo brew services stop httpd || true
+  sudo brew services start httpd
 }
 
 # Debian Apache configuration using a2enmod and conf-available
