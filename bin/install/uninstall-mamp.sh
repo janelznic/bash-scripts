@@ -40,10 +40,19 @@ brew_services_as_user() {
   fi
 }
 
+# Get brew prefix under the same user context
+brew_prefix() {
+  if [ "$(id -u)" -eq 0 ] && [ -n "${SUDO_USER:-}" ]; then
+    sudo -u "$SUDO_USER" brew --prefix
+  else
+    brew --prefix
+  fi
+}
+
 if [ "$CHECK_ONLY" = "true" ]; then
   log "Check-only mode: verifying uninstall state without making changes."
   # Checks: Homebrew-managed binaries absent (ignore system-provided ones)
-  BREW_PREFIX=$(brew --prefix)
+  BREW_PREFIX=$(brew_prefix)
   bin_in_brew() {
     local b="$1"; local p
     p=$(command -v "$b" 2>/dev/null || true)
@@ -55,9 +64,9 @@ if [ "$CHECK_ONLY" = "true" ]; then
 
   # Services stopped
   brew_services_as_user list >/tmp/_brew_services_$$ 2>/dev/null || true
-  grep -E '^httpd\s' /tmp/_brew_services_$$ >/dev/null 2>&1; svc_httpd=$?
-  grep -E '^php\s' /tmp/_brew_services_$$ >/dev/null 2>&1; svc_php=$?
-  grep -E '^mysql\s' /tmp/_brew_services_$$ >/dev/null 2>&1; svc_mysql=$?
+  if grep -E '^httpd\s' /tmp/_brew_services_$$ >/dev/null 2>&1; then svc_httpd=0; else svc_httpd=1; fi
+  if grep -E '^php\s' /tmp/_brew_services_$$  >/dev/null 2>&1; then svc_php=0;   else svc_php=1;   fi
+  if grep -E '^mysql\s' /tmp/_brew_services_$$>/dev/null 2>&1; then svc_mysql=0; else svc_mysql=1; fi
   rm -f /tmp/_brew_services_$$
   if [ $svc_httpd -ne 0 ]; then st=0; else st=1; fi; check_result "httpd service stopped/absent" "$st" "Service still listed"
   if [ $svc_php   -ne 0 ]; then st=0; else st=1; fi; check_result "php service stopped/absent" "$st" "Service still listed"
@@ -68,7 +77,7 @@ if [ "$CHECK_ONLY" = "true" ]; then
   if is_port_listening 3306; then st=1; else st=0; fi; check_result "Port 3306 not listening" "$st" "Listener detected"
 
   # Paths removed
-  BREW_PREFIX=$(brew --prefix)
+  BREW_PREFIX=$(brew_prefix)
   PMA_DIR="$BREW_PREFIX/var/www/phpmyadmin"
   HTTPD_LOG_DIR="$BREW_PREFIX/var/log/httpd"
   MYSQL_DATA_DIR="$BREW_PREFIX/var/mysql"
@@ -92,7 +101,7 @@ brew_services_as_user stop php || true
 brew_services_as_user stop mysql || true
 
 # Paths
-BREW_PREFIX=$(brew --prefix)
+BREW_PREFIX=$(brew_prefix)
 APACHE_CONF="$BREW_PREFIX/etc/httpd/httpd.conf"
 PMA_DIR="$BREW_PREFIX/var/www/phpmyadmin"
 
@@ -111,10 +120,27 @@ HTTPD_LOG_DIR="$BREW_PREFIX/var/log/httpd"
 PHP_LOG_DIR="$BREW_PREFIX/var/log"
 MYSQL_DATA_DIR="$BREW_PREFIX/var/mysql"
 
-# Always uninstall packages (even without --purge)
-brew_as_user uninstall httpd || true
-brew_as_user uninstall php || true
-brew_as_user uninstall mysql || true
+# Always uninstall packages (even without --purge). Force and ignore deps when necessary.
+brew_as_user uninstall --force httpd || true
+brew_as_user uninstall --ignore-dependencies --force php || true
+brew_as_user uninstall --force mysql || true
+
+# Fallback: remove lingering Cellar directories if brew couldn't
+CELLAR_DIR="$BREW_PREFIX/Cellar"
+[ -d "$CELLAR_DIR/httpd" ] && sudo rm -rf "$CELLAR_DIR/httpd"
+[ -d "$CELLAR_DIR/php" ] && sudo rm -rf "$CELLAR_DIR/php"
+[ -d "$CELLAR_DIR/mysql" ] && sudo rm -rf "$CELLAR_DIR/mysql"
+
+# Remove remaining opt symlinks and bin/sbin shims for these formulae
+for f in httpd php mysql; do
+  [ -e "$BREW_PREFIX/opt/$f" ] && sudo rm -rf "$BREW_PREFIX/opt/$f"
+  [ -e "$BREW_PREFIX/bin/$f" ] && sudo rm -f "$BREW_PREFIX/bin/$f"
+  [ -e "$BREW_PREFIX/sbin/$f" ] && sudo rm -f "$BREW_PREFIX/sbin/$f"
+done
+
+# Cleanup unneeded dependencies and symlinks
+brew_as_user autoremove || true
+brew_as_user cleanup -s || true
 log "Homebrew packages uninstalled (httpd, php, mysql)."
 
 if [ "$PURGE" = "true" ]; then
