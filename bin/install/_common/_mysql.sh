@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-. "$(dirname "$0")/_utils.sh"
+# Source utils relative to this helper file (robust across CWD)
+_THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$_THIS_DIR/_utils.sh"
 
 MYSQL_ROOT_PASSWORD_DEFAULT="aaa"
 
