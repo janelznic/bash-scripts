@@ -61,15 +61,6 @@ sudo ./uninstall-lamp.sh          # stop services, remove created resources
 sudo ./uninstall-lamp.sh --purge  # additionally purge apt packages
 ```
 
-### Help
-Each installer/uninstaller supports `--help` and `--non-interactive`:
-```bash
-./install-mamp.sh --help
-./install-lamp.sh --help
-./uninstall-mamp.sh --help
-./uninstall-lamp.sh --help
-```
-
 ### Notes
 - The scripts may prompt for confirmation unless `--non-interactive` is used.
 - macOS Apache runs via Homebrew services and is reconfigured to port 80; this may require sudo and can change ownership of some Homebrew paths.
