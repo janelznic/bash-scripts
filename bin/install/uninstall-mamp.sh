@@ -75,7 +75,7 @@ remove_test_vhost_symlink
 [ "$PURGE" = "true" ] && purge_test_vhost_dir
 
 # Paths
-BREW_PREFIX=$(brew --prefix)
+BREW_PREFIX=$(brew_prefix)
 APACHE_CONF="$BREW_PREFIX/etc/httpd/httpd.conf"
 PMA_DIR="$BREW_PREFIX/var/www/phpmyadmin"
 HTTPD_LOG_DIR="$BREW_PREFIX/var/log/httpd"
@@ -117,6 +117,29 @@ if [ "$PURGE" = "true" ]; then
   find "$PHP_LOG_DIR" -maxdepth 1 -name 'php-fpm*' -exec rm -f {} \; 2>/dev/null || true
   # Remove MySQL data directory
   [ -d "$MYSQL_DATA_DIR" ] && rm -rf "$MYSQL_DATA_DIR" && log "Purged MySQL data dir: $MYSQL_DATA_DIR"
+  # Remove Apache httpd configuration directory
+  HTTPD_CONF_DIR="$BREW_PREFIX/etc/httpd"
+  if [ -d "$HTTPD_CONF_DIR" ]; then
+    sudo rm -rf "$HTTPD_CONF_DIR"
+    log "Purged Apache config dir: $HTTPD_CONF_DIR"
+  fi
+  # Remove Apache runtime dirs and default docroot created by installer
+  HTTPD_RUN_DIR="$BREW_PREFIX/var/run/httpd"
+  [ -d "$HTTPD_RUN_DIR" ] && sudo rm -rf "$HTTPD_RUN_DIR" && log "Purged Apache run dir: $HTTPD_RUN_DIR"
+  HTTPD_DOCROOT="$BREW_PREFIX/var/www"
+  [ -d "$HTTPD_DOCROOT" ] && sudo rm -rf "$HTTPD_DOCROOT" && log "Purged Apache docroot: $HTTPD_DOCROOT"
+  # Remove Homebrew service plists for httpd (system and user)
+  [ -f "/Library/LaunchDaemons/homebrew.mxcl.httpd.plist" ] && sudo rm -f "/Library/LaunchDaemons/homebrew.mxcl.httpd.plist" && log "Removed LaunchDaemon: /Library/LaunchDaemons/homebrew.mxcl.httpd.plist"
+  if [ -n "${SUDO_USER:-}" ]; then
+    USER_HOME=$(eval echo "~$SUDO_USER")
+  else
+    USER_HOME="$HOME"
+  fi
+  [ -f "$USER_HOME/Library/LaunchAgents/homebrew.mxcl.httpd.plist" ] && rm -f "$USER_HOME/Library/LaunchAgents/homebrew.mxcl.httpd.plist" && log "Removed LaunchAgent: $USER_HOME/Library/LaunchAgents/homebrew.mxcl.httpd.plist"
+  # Remove Homebrew formula logs for httpd
+  [ -d "$USER_HOME/Library/Logs/Homebrew/httpd" ] && rm -rf "$USER_HOME/Library/Logs/Homebrew/httpd" && log "Purged Homebrew httpd logs: $USER_HOME/Library/Logs/Homebrew/httpd"
+  # Remove any lingering brew-linked markers
+  [ -L "$BREW_PREFIX/var/homebrew/linked/httpd" ] && sudo rm -f "$BREW_PREFIX/var/homebrew/linked/httpd" && log "Removed brew linked symlink for httpd"
   # Remove all managed vhosts recorded by installer
   remove_all_managed_vhosts
 fi
