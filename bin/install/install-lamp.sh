@@ -56,7 +56,7 @@ PHPMYADMIN_DIR=$(install_phpmyadmin_debian)
 # Prepare vhosts and test site
 create_user_vhosts_dir
 create_test_vhost_structure
-write_test_vhost_conf
+write_test_vhost_conf "$APACHE_PORT"
 symlink_test_vhost_into_user_dir
 add_hosts_entry_if_missing
 
@@ -71,6 +71,6 @@ echo "- phpMyAdmin: http://localhost/phpmyadmin"
 
 # Post-install verification
 if [ "$CHECK_ONLY" != "true" ]; then
-  log "Provádím post-install ověření (--check)."
+  log "Running post-install verification (--check)."
   "$SCRIPT_DIR/install-lamp.sh" --check
 fi

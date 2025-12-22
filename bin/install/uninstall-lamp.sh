@@ -84,3 +84,9 @@ print_summary
 echo "Debian LAMP uninstall complete."
 echo "- Services stopped: apache2, php-fpm, mysql/mariadb"
 echo "- Purge: $PURGE"
+
+# Post-uninstall verification
+if [ "$CHECK_ONLY" != "true" ]; then
+  log "Running post-uninstall verification (--check)."
+  "$SCRIPT_DIR/uninstall-lamp.sh" --check
+fi

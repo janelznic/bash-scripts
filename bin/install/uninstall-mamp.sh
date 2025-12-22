@@ -139,6 +139,6 @@ echo "- Purge: $PURGE"
 
 # Post-uninstall verification
 if [ "$CHECK_ONLY" != "true" ]; then
-  log "Provádím post-uninstall ověření (--check)."
+  log "Running post-uninstall verification (--check)."
   "$SCRIPT_DIR/uninstall-mamp.sh" --check
 fi
