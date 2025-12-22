@@ -140,6 +140,24 @@ if [ "$PURGE" = "true" ]; then
   [ -d "$USER_HOME/Library/Logs/Homebrew/httpd" ] && rm -rf "$USER_HOME/Library/Logs/Homebrew/httpd" && log "Purged Homebrew httpd logs: $USER_HOME/Library/Logs/Homebrew/httpd"
   # Remove any lingering brew-linked markers
   [ -L "$BREW_PREFIX/var/homebrew/linked/httpd" ] && sudo rm -f "$BREW_PREFIX/var/homebrew/linked/httpd" && log "Removed brew linked symlink for httpd"
+
+  # --- PHP purge ---
+  PHP_CONF_DIR="$BREW_PREFIX/etc/php"
+  [ -d "$PHP_CONF_DIR" ] && sudo rm -rf "$PHP_CONF_DIR" && log "Purged PHP config dir: $PHP_CONF_DIR"
+  PHP_RUN_DIR="$BREW_PREFIX/var/run"
+  [ -e "$PHP_RUN_DIR/php-fpm.sock" ] && sudo rm -f "$PHP_RUN_DIR/php-fpm.sock" && log "Removed PHP-FPM socket: $PHP_RUN_DIR/php-fpm.sock"
+  [ -d "$USER_HOME/Library/Logs/Homebrew/php" ] && rm -rf "$USER_HOME/Library/Logs/Homebrew/php" && log "Purged Homebrew PHP logs: $USER_HOME/Library/Logs/Homebrew/php"
+  [ -f "/Library/LaunchDaemons/homebrew.mxcl.php.plist" ] && sudo rm -f "/Library/LaunchDaemons/homebrew.mxcl.php.plist" && log "Removed LaunchDaemon: /Library/LaunchDaemons/homebrew.mxcl.php.plist"
+  [ -f "$USER_HOME/Library/LaunchAgents/homebrew.mxcl.php.plist" ] && rm -f "$USER_HOME/Library/LaunchAgents/homebrew.mxcl.php.plist" && log "Removed LaunchAgent: $USER_HOME/Library/LaunchAgents/homebrew.mxcl.php.plist"
+
+  # --- MySQL purge ---
+  MYSQL_CONF_FILE="$BREW_PREFIX/etc/my.cnf"
+  MYSQL_CONF_DIR="$BREW_PREFIX/etc/my.cnf.d"
+  [ -f "$MYSQL_CONF_FILE" ] && sudo rm -f "$MYSQL_CONF_FILE" && log "Removed MySQL config: $MYSQL_CONF_FILE"
+  [ -d "$MYSQL_CONF_DIR" ] && sudo rm -rf "$MYSQL_CONF_DIR" && log "Purged MySQL config dir: $MYSQL_CONF_DIR"
+  [ -d "$USER_HOME/Library/Logs/Homebrew/mysql" ] && rm -rf "$USER_HOME/Library/Logs/Homebrew/mysql" && log "Purged Homebrew MySQL logs: $USER_HOME/Library/Logs/Homebrew/mysql"
+  [ -f "/Library/LaunchDaemons/homebrew.mxcl.mysql.plist" ] && sudo rm -f "/Library/LaunchDaemons/homebrew.mxcl.mysql.plist" && log "Removed LaunchDaemon: /Library/LaunchDaemons/homebrew.mxcl.mysql.plist"
+  [ -f "$USER_HOME/Library/LaunchAgents/homebrew.mxcl.mysql.plist" ] && rm -f "$USER_HOME/Library/LaunchAgents/homebrew.mxcl.mysql.plist" && log "Removed LaunchAgent: $USER_HOME/Library/LaunchAgents/homebrew.mxcl.mysql.plist"
   # Remove all managed vhosts recorded by installer
   remove_all_managed_vhosts
 fi

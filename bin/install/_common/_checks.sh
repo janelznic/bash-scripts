@@ -21,6 +21,9 @@ _run_check() {
   check_result "$label" "$ok" "$detail"
 }
 
+# Section header
+_section() { echo ""; echo "=== $1 ==="; }
+
 # macOS (Homebrew) MAMP checks
 check_macos_mamp_state() {
   local mode="$1" # 'installed' or 'uninstalled'
@@ -45,12 +48,9 @@ check_macos_mamp_state() {
     p=$(command -v "$b" 2>/dev/null || true)
     if [ -n "$p" ] && [[ "$p" == "$BREW_PREFIX"* ]]; then echo 1; else echo 0; fi
   }
+  _section "httpd"
   _run_check "httpd binary $( [ "$mode" = installed ] && echo present || echo absent )" \
     "$(bin_in_brew_present httpd)" "$expect_present" "Found in PATH"
-  _run_check "php binary $( [ "$mode" = installed ] && echo present || echo absent )" \
-    "$(bin_in_brew_present php)" "$expect_present" "Found in PATH"
-  _run_check "mysql binary $( [ "$mode" = installed ] && echo present || echo absent )" \
-    "$(bin_in_brew_present mysql)" "$expect_present" "Found in PATH"
 
   # Services listed in brew services
   local svc_httpd=0 svc_php=0 svc_mysql=0
@@ -62,7 +62,13 @@ check_macos_mamp_state() {
     rm -f /tmp/_brew_services_$$ || true
   fi
   _run_check "httpd service $( [ "$mode" = installed ] && echo listed/active || echo stopped/absent )" "$svc_httpd" "$expect_present" "Service state differs"
+  _section "php"
+  _run_check "php binary $( [ "$mode" = installed ] && echo present || echo absent )" \
+    "$(bin_in_brew_present php)" "$expect_present" "Found in PATH"
   _run_check "php service $( [ "$mode" = installed ] && echo listed/active || echo stopped/absent )" "$svc_php" "$expect_present" "Service state differs"
+  _section "mysql"
+  _run_check "mysql binary $( [ "$mode" = installed ] && echo present || echo absent )" \
+    "$(bin_in_brew_present mysql)" "$expect_present" "Found in PATH"
   _run_check "mysql service $( [ "$mode" = installed ] && echo listed/active || echo stopped/absent )" "$svc_mysql" "$expect_present" "Service state differs"
 
   # Ports listening: read configured Listen from httpd.conf
@@ -74,8 +80,8 @@ check_macos_mamp_state() {
   local http_listen=0 mysql_listen=0
   if is_port_listening "$http_port"; then http_listen=1; else http_listen=0; fi
   if is_port_listening 3306; then mysql_listen=1; else mysql_listen=0; fi
-  _run_check "Port $http_port $( [ "$mode" = installed ] && echo listening || echo not listening )" "$http_listen" "$expect_present" "Listener state differs"
-  _run_check "Port 3306 $( [ "$mode" = installed ] && echo listening || echo not listening )" "$mysql_listen" "$expect_present" "Listener state differs"
+  _run_check "httpd port $http_port $( [ "$mode" = installed ] && echo listening || echo not listening )" "$http_listen" "$expect_present" "Listener state differs"
+  _run_check "mysql port 3306 $( [ "$mode" = installed ] && echo listening || echo not listening )" "$mysql_listen" "$expect_present" "Listener state differs"
   # Also check both 80 and 8080 explicitly; only the configured port should listen
   for p in 80 8080; do
     local actual=0; local expected=0
@@ -85,7 +91,7 @@ check_macos_mamp_state() {
     else
       expected=0
     fi
-    local label="Port $p $( [ "$expected" = 1 ] && echo listening || echo not listening )"
+    local label="httpd port $p $( [ "$expected" = 1 ] && echo listening || echo not listening )"
     _run_check "$label" "$actual" "$expected" "Unexpected listener on port $p"
   done
 
@@ -97,16 +103,43 @@ check_macos_mamp_state() {
   [ -e "$PMA_DIR" ] && pma_present=1
   [ -e "$HTTPD_LOG_DIR" ] && httpd_logs_present=1
   [ -e "$MYSQL_DATA_DIR" ] && mysql_data_present=1
-  _run_check "phpMyAdmin directory $( [ "$mode" = installed ] && echo present || echo removed )" "$pma_present" "$expect_present" "Exists: $PMA_DIR"
+  # httpd paths
   _run_check "httpd logs $( [ "$mode" = installed ] && echo present || echo removed )" "$httpd_logs_present" "$expect_present" "Exists: $HTTPD_LOG_DIR"
-  _run_check "MySQL data dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mysql_data_present" "$expect_present" "Exists: $MYSQL_DATA_DIR"
   # httpd config directory presence (Homebrew)
   local HTTPD_CONF_DIR="$BREW_PREFIX/etc/httpd"
   local httpd_confdir_present=0
   [ -d "$HTTPD_CONF_DIR" ] && httpd_confdir_present=1
   _run_check "httpd config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$httpd_confdir_present" "$expect_present" "Exists: $HTTPD_CONF_DIR"
+  # httpd docroot and run dir
+  local HTTPD_DOCROOT="$BREW_PREFIX/var/www"
+  local HTTPD_RUN_DIR="$BREW_PREFIX/var/run/httpd"
+  local httpd_docroot_present=0 httpd_run_present=0
+  [ -d "$HTTPD_DOCROOT" ] && httpd_docroot_present=1
+  [ -d "$HTTPD_RUN_DIR" ] && httpd_run_present=1
+  _run_check "httpd docroot $( [ "$mode" = installed ] && echo present || echo removed )" "$httpd_docroot_present" "$expect_present" "Exists: $HTTPD_DOCROOT"
+  _run_check "httpd run dir $( [ "$mode" = installed ] && echo present || echo removed )" "$httpd_run_present" "$expect_present" "Exists: $HTTPD_RUN_DIR"
 
-  # Hosts entry
+  # php config dir and fpm socket
+  local PHP_CONF_DIR="$BREW_PREFIX/etc/php"
+  local PHP_FPM_SOCK="$BREW_PREFIX/var/run/php-fpm.sock"
+  local php_conf_present=0 php_sock_present=0
+  [ -d "$PHP_CONF_DIR" ] && php_conf_present=1
+  [ -e "$PHP_FPM_SOCK" ] && php_sock_present=1
+  _run_check "php config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$php_conf_present" "$expect_present" "Exists: $PHP_CONF_DIR"
+  _run_check "php-fpm socket $( [ "$mode" = installed ] && echo present || echo removed )" "$php_sock_present" "$expect_present" "Exists: $PHP_FPM_SOCK"
+
+  _run_check "MySQL data dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mysql_data_present" "$expect_present" "Exists: $MYSQL_DATA_DIR"
+  local MYSQL_CONF_FILE="$BREW_PREFIX/etc/my.cnf"
+  local MYSQL_CONF_DIR="$BREW_PREFIX/etc/my.cnf.d"
+  local mysql_conf_present=0 mysql_confd_present=0
+  [ -f "$MYSQL_CONF_FILE" ] && mysql_conf_present=1
+  [ -d "$MYSQL_CONF_DIR" ] && mysql_confd_present=1
+  _run_check "MySQL config file $( [ "$mode" = installed ] && echo present || echo removed )" "$mysql_conf_present" "$expect_present" "Exists: $MYSQL_CONF_FILE"
+  _run_check "MySQL config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mysql_confd_present" "$expect_present" "Exists: $MYSQL_CONF_DIR"
+
+  _run_check "phpMyAdmin directory $( [ "$mode" = installed ] && echo present || echo removed )" "$pma_present" "$expect_present" "Exists: $PMA_DIR"
+
+  # Hosts entry (httpd-related)
   local hosts_present=0
   if has_hosts_entry "test.localhost"; then hosts_present=1; else hosts_present=0; fi
   _run_check "Hosts entry $( [ "$mode" = installed ] && echo present || echo removed ) (test.localhost)" "$hosts_present" "$expect_present" "Entry differs"
@@ -138,9 +171,12 @@ check_debian_lamp_state() {
 
   # Binaries
   bin_present() { command -v "$1" >/dev/null 2>&1 && echo 1 || echo 0; }
+  _section "httpd"
   _run_check "apache2 binary $( [ "$mode" = installed ] && echo present || echo absent )" "$(bin_present apache2)" "$expect_present" "Found in PATH"
+  _section "php"
   _run_check "php binary $( [ "$mode" = installed ] && echo present || echo absent )" "$(bin_present php)" "$expect_present" "Found in PATH"
   _run_check "php-fpm binary $( [ "$mode" = installed ] && echo present || echo absent )" "$(bin_present php-fpm)" "$expect_present" "Found in PATH"
+  _section "mysql"
   _run_check "mysql binary $( [ "$mode" = installed ] && echo present || echo absent )" "$(bin_present mysql)" "$expect_present" "Found in PATH"
   _run_check "mariadb binary $( [ "$mode" = installed ] && echo present || echo absent )" "$(bin_present mariadb)" "$expect_present" "Found in PATH"
 
@@ -170,8 +206,9 @@ check_debian_lamp_state() {
   local http_listen=0 mysql_listen=0
   if is_port_listening "$http_port"; then http_listen=1; else http_listen=0; fi
   if is_port_listening 3306; then mysql_listen=1; else mysql_listen=0; fi
-  _run_check "Port $http_port $( [ "$mode" = installed ] && echo listening || echo not listening )" "$http_listen" "$expect_present" "Listener state differs"
-  _run_check "Port 3306 $( [ "$mode" = installed ] && echo listening || echo not listening )" "$mysql_listen" "$expect_present" "Listener state differs"
+  _run_check "apache2 port $http_port $( [ "$mode" = installed ] && echo listening || echo not listening )" "$http_listen" "$expect_present" "Listener state differs"
+  _section "mysql"
+  _run_check "mysql port 3306 $( [ "$mode" = installed ] && echo listening || echo not listening )" "$mysql_listen" "$expect_present" "Listener state differs"
   # Also check both 80 and 8080 explicitly; only the configured port should listen
   for p in 80 8080; do
     local actual=0; local expected=0
@@ -181,23 +218,32 @@ check_debian_lamp_state() {
     else
       expected=0
     fi
-    local label="Port $p $( [ "$expected" = 1 ] && echo listening || echo not listening )"
+    local label="apache2 port $p $( [ "$expected" = 1 ] && echo listening || echo not listening )"
     _run_check "$label" "$actual" "$expected" "Unexpected listener on port $p"
   done
 
   # Paths
   local pma_present=0 apache_logs_present=0 mysql_data_present=0 mariadb_data_present=0
   local apache_confdir_present=0
+  local php_confdir_present=0 mysql_confdir_present=0 mariadb_confdir_present=0 phpmyadmin_confdir_present=0
   [ -e "/usr/share/phpmyadmin" ] && pma_present=1
   [ -e "/var/log/apache2" ] && apache_logs_present=1
   [ -e "/var/lib/mysql" ] && mysql_data_present=1
   [ -e "/var/lib/mariadb" ] && mariadb_data_present=1
   [ -d "/etc/apache2" ] && apache_confdir_present=1
-  _run_check "phpMyAdmin directory $( [ "$mode" = installed ] && echo present || echo removed )" "$pma_present" "$expect_present" "Exists"
-  _run_check "Apache logs $( [ "$mode" = installed ] && echo present || echo removed )" "$apache_logs_present" "$expect_present" "Exists"
-  _run_check "MySQL data dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mysql_data_present" "$expect_present" "Exists"
-  _run_check "MariaDB data dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mariadb_data_present" "$expect_present" "Exists"
+  [ -d "/etc/php" ] && php_confdir_present=1
+  [ -d "/etc/mysql" ] && mysql_confdir_present=1
+  [ -d "/etc/mariadb" ] && mariadb_confdir_present=1
+  [ -d "/etc/phpmyadmin" ] && phpmyadmin_confdir_present=1
+  _run_check "Apache logs $( [ "$mode" = installed ] && echo present || echo removed )" "$apache_logs_present" "$expect_present" "Exists: /var/log/apache2"
   _run_check "Apache config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$apache_confdir_present" "$expect_present" "Exists: /etc/apache2"
+  _run_check "PHP config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$php_confdir_present" "$expect_present" "Exists: /etc/php"
+  _run_check "MySQL data dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mysql_data_present" "$expect_present" "Exists: /var/lib/mysql"
+  _run_check "MariaDB data dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mariadb_data_present" "$expect_present" "Exists: /var/lib/mariadb"
+  _run_check "MySQL config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mysql_confdir_present" "$expect_present" "Exists: /etc/mysql"
+  _run_check "MariaDB config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mariadb_confdir_present" "$expect_present" "Exists: /etc/mariadb"
+  _run_check "phpMyAdmin directory $( [ "$mode" = installed ] && echo present || echo removed )" "$pma_present" "$expect_present" "Exists: /usr/share/phpmyadmin"
+  _run_check "phpMyAdmin config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$phpmyadmin_confdir_present" "$expect_present" "Exists: /etc/phpmyadmin"
 
   # Hosts entry
   local hosts_present=0

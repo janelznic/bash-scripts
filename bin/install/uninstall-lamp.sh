@@ -72,9 +72,15 @@ if [ "$PURGE" = "true" ]; then
   sudo rm -rf /var/lib/mysql /var/lib/mariadb || true
   # Remove phpMyAdmin files if present
   sudo rm -rf /usr/share/phpmyadmin || true
+  # Remove configuration directories (full purge)
+  sudo rm -rf /etc/apache2 || true
+  sudo rm -rf /etc/php || true
+  sudo rm -rf /etc/mysql || true
+  sudo rm -rf /etc/mariadb || true
+  sudo rm -rf /etc/phpmyadmin || true
   # Remove all managed vhosts recorded by installer
   remove_all_managed_vhosts
-  log "Purged logs, data directories, phpMyAdmin, and managed vhosts."
+  log "Purged logs, data directories, configs (apache2, php, mysql/mariadb, phpmyadmin), and managed vhosts."
 fi
 
 # Restart apache to apply removal of confs (if still installed)
