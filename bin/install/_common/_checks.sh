@@ -76,6 +76,18 @@ check_macos_mamp_state() {
   if is_port_listening 3306; then mysql_listen=1; else mysql_listen=0; fi
   _run_check "Port $http_port $( [ "$mode" = installed ] && echo listening || echo not listening )" "$http_listen" "$expect_present" "Listener state differs"
   _run_check "Port 3306 $( [ "$mode" = installed ] && echo listening || echo not listening )" "$mysql_listen" "$expect_present" "Listener state differs"
+  # Also check both 80 and 8080 explicitly; only the configured port should listen
+  for p in 80 8080; do
+    local actual=0; local expected=0
+    if is_port_listening "$p"; then actual=1; fi
+    if [ "$mode" = "installed" ]; then
+      if [ "$p" = "$http_port" ]; then expected=1; else expected=0; fi
+    else
+      expected=0
+    fi
+    local label="Port $p $( [ "$expected" = 1 ] && echo listening || echo not listening )"
+    _run_check "$label" "$actual" "$expected" "Unexpected listener on port $p"
+  done
 
   # Paths
   local PMA_DIR="$BREW_PREFIX/var/www/phpmyadmin"
@@ -88,6 +100,11 @@ check_macos_mamp_state() {
   _run_check "phpMyAdmin directory $( [ "$mode" = installed ] && echo present || echo removed )" "$pma_present" "$expect_present" "Exists: $PMA_DIR"
   _run_check "httpd logs $( [ "$mode" = installed ] && echo present || echo removed )" "$httpd_logs_present" "$expect_present" "Exists: $HTTPD_LOG_DIR"
   _run_check "MySQL data dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mysql_data_present" "$expect_present" "Exists: $MYSQL_DATA_DIR"
+  # httpd config directory presence (Homebrew)
+  local HTTPD_CONF_DIR="$BREW_PREFIX/etc/httpd"
+  local httpd_confdir_present=0
+  [ -d "$HTTPD_CONF_DIR" ] && httpd_confdir_present=1
+  _run_check "httpd config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$httpd_confdir_present" "$expect_present" "Exists: $HTTPD_CONF_DIR"
 
   # Hosts entry
   local hosts_present=0
@@ -155,6 +172,18 @@ check_debian_lamp_state() {
   if is_port_listening 3306; then mysql_listen=1; else mysql_listen=0; fi
   _run_check "Port $http_port $( [ "$mode" = installed ] && echo listening || echo not listening )" "$http_listen" "$expect_present" "Listener state differs"
   _run_check "Port 3306 $( [ "$mode" = installed ] && echo listening || echo not listening )" "$mysql_listen" "$expect_present" "Listener state differs"
+  # Also check both 80 and 8080 explicitly; only the configured port should listen
+  for p in 80 8080; do
+    local actual=0; local expected=0
+    if is_port_listening "$p"; then actual=1; fi
+    if [ "$mode" = "installed" ]; then
+      if [ "$p" = "$http_port" ]; then expected=1; else expected=0; fi
+    else
+      expected=0
+    fi
+    local label="Port $p $( [ "$expected" = 1 ] && echo listening || echo not listening )"
+    _run_check "$label" "$actual" "$expected" "Unexpected listener on port $p"
+  done
 
   # Paths
   local pma_present=0 apache_logs_present=0 mysql_data_present=0 mariadb_data_present=0
