@@ -187,14 +187,17 @@ check_debian_lamp_state() {
 
   # Paths
   local pma_present=0 apache_logs_present=0 mysql_data_present=0 mariadb_data_present=0
+  local apache_confdir_present=0
   [ -e "/usr/share/phpmyadmin" ] && pma_present=1
   [ -e "/var/log/apache2" ] && apache_logs_present=1
   [ -e "/var/lib/mysql" ] && mysql_data_present=1
   [ -e "/var/lib/mariadb" ] && mariadb_data_present=1
+  [ -d "/etc/apache2" ] && apache_confdir_present=1
   _run_check "phpMyAdmin directory $( [ "$mode" = installed ] && echo present || echo removed )" "$pma_present" "$expect_present" "Exists"
   _run_check "Apache logs $( [ "$mode" = installed ] && echo present || echo removed )" "$apache_logs_present" "$expect_present" "Exists"
   _run_check "MySQL data dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mysql_data_present" "$expect_present" "Exists"
   _run_check "MariaDB data dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mariadb_data_present" "$expect_present" "Exists"
+  _run_check "Apache config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$apache_confdir_present" "$expect_present" "Exists: /etc/apache2"
 
   # Hosts entry
   local hosts_present=0
