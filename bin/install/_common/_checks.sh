@@ -65,11 +65,16 @@ check_macos_mamp_state() {
   _run_check "php service $( [ "$mode" = installed ] && echo listed/active || echo stopped/absent )" "$svc_php" "$expect_present" "Service state differs"
   _run_check "mysql service $( [ "$mode" = installed ] && echo listed/active || echo stopped/absent )" "$svc_mysql" "$expect_present" "Service state differs"
 
-  # Ports listening
+  # Ports listening: read configured Listen from httpd.conf
+  local conf="$BREW_PREFIX/etc/httpd/httpd.conf"
+  local http_port=80
+  if [ -f "$conf" ]; then
+    http_port=$(awk '/^Listen[ ]/{print $2; exit}' "$conf" 2>/dev/null || echo 80)
+  fi
   local http_listen=0 mysql_listen=0
-  if is_port_listening 80; then http_listen=1; else http_listen=0; fi
+  if is_port_listening "$http_port"; then http_listen=1; else http_listen=0; fi
   if is_port_listening 3306; then mysql_listen=1; else mysql_listen=0; fi
-  _run_check "Port 80 $( [ "$mode" = installed ] && echo listening || echo not listening )" "$http_listen" "$expect_present" "Listener state differs"
+  _run_check "Port $http_port $( [ "$mode" = installed ] && echo listening || echo not listening )" "$http_listen" "$expect_present" "Listener state differs"
   _run_check "Port 3306 $( [ "$mode" = installed ] && echo listening || echo not listening )" "$mysql_listen" "$expect_present" "Listener state differs"
 
   # Paths
@@ -140,11 +145,15 @@ check_debian_lamp_state() {
     _run_check "php-fpm services $( [ "$mode" = installed ] && echo present/active || echo inactive/absent )" 0 "$expect_absent"
   fi
 
-  # Ports listening
+  # Ports listening: read configured Listen from ports.conf
+  local http_port=80
+  if [ -f "/etc/apache2/ports.conf" ]; then
+    http_port=$(awk '/^Listen[ ]/{print $2; exit}' /etc/apache2/ports.conf 2>/dev/null || echo 80)
+  fi
   local http_listen=0 mysql_listen=0
-  if is_port_listening 80; then http_listen=1; else http_listen=0; fi
+  if is_port_listening "$http_port"; then http_listen=1; else http_listen=0; fi
   if is_port_listening 3306; then mysql_listen=1; else mysql_listen=0; fi
-  _run_check "Port 80 $( [ "$mode" = installed ] && echo listening || echo not listening )" "$http_listen" "$expect_present" "Listener state differs"
+  _run_check "Port $http_port $( [ "$mode" = installed ] && echo listening || echo not listening )" "$http_listen" "$expect_present" "Listener state differs"
   _run_check "Port 3306 $( [ "$mode" = installed ] && echo listening || echo not listening )" "$mysql_listen" "$expect_present" "Listener state differs"
 
   # Paths

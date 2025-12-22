@@ -160,6 +160,7 @@ configure_apache_mac() {
     extra="$brew_prefix/etc/httpd/extra"
   fi
   local docroot="$brew_prefix/var/www"
+  local port="${2:-80}"
 
   # Ensure required modules are loaded in httpd.conf
   sudo sed -i.bak \
@@ -170,12 +171,12 @@ configure_apache_mac() {
     -e 's|^#\?LoadModule proxy_fcgi_module.*|LoadModule proxy_fcgi_module lib/httpd/modules/mod_proxy_fcgi.so|' \
     "$conf"
 
-  # Listen on port 80 (remove any 8080 lines in main conf)
+  # Listen on chosen port (remove any default 8080 lines in main conf)
   if grep -q '^Listen ' "$conf"; then
-    sudo sed -i.bak -e 's/^Listen .*/Listen 80/' "$conf"
+    sudo sed -i.bak -e "s/^Listen .*/Listen $port/" "$conf"
     sudo sed -i '' -e '/^Listen 8080$/d' "$conf" || true
   else
-    echo "Listen 80" | sudo tee -a "$conf" >/dev/null
+    echo "Listen $port" | sudo tee -a "$conf" >/dev/null
   fi
 
   # Set global ServerName to suppress FQDN warning
@@ -241,8 +242,9 @@ configure_apache_debian() {
   echo "# Include user virtualhosts\nIncludeOptional $(APACHE_USER_VHOSTS_DIR)/*.conf" | sudo tee "$conf_file" >/dev/null
   sudo a2enconf user-vhosts
 
-  # Ensure Apache listens on 80 (default)
-  sudo sed -i 's/^Listen .*/Listen 80/' /etc/apache2/ports.conf || true
+  # Ensure Apache listens on chosen port (default 80)
+  local port="${2:-80}"
+  sudo sed -i "s/^Listen .*/Listen $port/" /etc/apache2/ports.conf || true
 
   # Configure global PHP-FPM handler (Debian default socket)
   local php_sock="/run/php/php-fpm.sock"

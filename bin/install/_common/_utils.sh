@@ -146,3 +146,47 @@ print_checks_summary() {
   echo ""
   echo "Verification summary: $CHECKS_OK/$CHECKS_TOTAL checks passed"
 }
+
+# ---------- Apache port helpers ----------
+APACHE_PORT_DEFAULT=80
+
+parse_apache_port() {
+  local arg
+  for arg in "$@"; do
+    case "$arg" in
+      --apache-port=*) APACHE_PORT="${arg#*=}" ;;
+    esac
+  done
+  # Handle separated form
+  local i=1
+  while [ $i -le $# ]; do
+    arg="${!i}"
+    if [ "$arg" = "--apache-port" ]; then
+      i=$((i+1))
+      APACHE_PORT="${!i:-}"
+      break
+    fi
+    i=$((i+1))
+  done
+}
+
+prompt_apache_port() {
+  local default="${1:-$APACHE_PORT_DEFAULT}"
+  local non_interactive="${2:-false}"
+  if [ -n "${APACHE_PORT:-}" ]; then
+    return
+  fi
+  if [ "$non_interactive" = "true" ]; then
+    APACHE_PORT="$default"
+    log "Using default Apache port (non-interactive): $APACHE_PORT"
+    return
+  fi
+  printf "Enter Apache port (e.g. 80 or 8080): "
+  read -r APACHE_PORT
+  if ! echo "$APACHE_PORT" | grep -qE '^[0-9]+$'; then
+    APACHE_PORT="$default"
+    warn "Invalid input; defaulting Apache port to: $APACHE_PORT"
+  else
+    log "Apache port captured: $APACHE_PORT"
+  fi
+}

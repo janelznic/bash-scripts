@@ -24,6 +24,8 @@ done
 if [ "$CHECK_ONLY" != "true" ]; then
   parse_mysql_root_password "$@"
   prompt_mysql_root_password "aaa" "$NON_INTERACTIVE"
+  parse_apache_port "$@"
+  prompt_apache_port 80 "$NON_INTERACTIVE"
 fi
 
 log "Starting LAMP setup for Debian 13 Trixie."
@@ -58,8 +60,8 @@ write_test_vhost_conf
 symlink_test_vhost_into_user_dir
 add_hosts_entry_if_missing
 
-# Configure Apache: enable modules, include vhosts, PHP-FPM handler, phpMyAdmin alias
-configure_apache_debian "$PHPMYADMIN_DIR"
+# Configure Apache: enable modules, include vhosts, PHP-FPM handler, phpMyAdmin alias on chosen port
+configure_apache_debian "$PHPMYADMIN_DIR" "$APACHE_PORT"
 
 print_summary
 echo "Debian LAMP setup complete."

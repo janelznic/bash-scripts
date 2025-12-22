@@ -24,6 +24,8 @@ done
 if [ "$CHECK_ONLY" != "true" ]; then
   parse_mysql_root_password "$@"
   prompt_mysql_root_password "aaa" "$NON_INTERACTIVE"
+  parse_apache_port "$@"
+  prompt_apache_port 80 "$NON_INTERACTIVE"
 fi
 
 log "Starting MAMP setup for macOS (Apple Silicon)."
@@ -55,8 +57,8 @@ write_test_vhost_conf
 symlink_test_vhost_into_user_dir
 add_hosts_entry_if_missing
 
-# Configure Apache to port 80, modules, PHP-FPM handler, include vhosts, and phpMyAdmin alias
-configure_apache_mac "$PHPMYADMIN_DIR"
+# Configure Apache to chosen port, modules, PHP-FPM handler, include vhosts, and phpMyAdmin alias
+configure_apache_mac "$PHPMYADMIN_DIR" "$APACHE_PORT"
 
 log "Ensuring PHP common extensions are available (curl, mbstring, intl, gd, xml, zip, bcmath, soap)."
 log "On macOS via Homebrew PHP, most common extensions are builtin; PECL-managed ones can be added later if needed."
