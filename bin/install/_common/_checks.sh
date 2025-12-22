@@ -137,6 +137,7 @@ check_macos_mamp_state() {
   _run_check "MySQL config file $( [ "$mode" = installed ] && echo present || echo removed )" "$mysql_conf_present" "$expect_present" "Exists: $MYSQL_CONF_FILE"
   _run_check "MySQL config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mysql_confd_present" "$expect_present" "Exists: $MYSQL_CONF_DIR"
 
+  _section "phpmyadmin"
   _run_check "phpMyAdmin directory $( [ "$mode" = installed ] && echo present || echo removed )" "$pma_present" "$expect_present" "Exists: $PMA_DIR"
 
   # Hosts entry (httpd-related)
@@ -242,6 +243,7 @@ check_debian_lamp_state() {
   _run_check "MariaDB data dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mariadb_data_present" "$expect_present" "Exists: /var/lib/mariadb"
   _run_check "MySQL config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mysql_confdir_present" "$expect_present" "Exists: /etc/mysql"
   _run_check "MariaDB config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mariadb_confdir_present" "$expect_present" "Exists: /etc/mariadb"
+  _section "phpmyadmin"
   _run_check "phpMyAdmin directory $( [ "$mode" = installed ] && echo present || echo removed )" "$pma_present" "$expect_present" "Exists: /usr/share/phpmyadmin"
   _run_check "phpMyAdmin config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$phpmyadmin_confdir_present" "$expect_present" "Exists: /etc/phpmyadmin"
 
