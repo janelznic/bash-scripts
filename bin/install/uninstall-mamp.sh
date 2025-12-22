@@ -146,9 +146,11 @@ if [ "$PURGE" = "true" ]; then
   [ -d "$PHP_CONF_DIR" ] && sudo rm -rf "$PHP_CONF_DIR" && log "Purged PHP config dir: $PHP_CONF_DIR"
   PHP_RUN_DIR="$BREW_PREFIX/var/run"
   [ -e "$PHP_RUN_DIR/php-fpm.sock" ] && sudo rm -f "$PHP_RUN_DIR/php-fpm.sock" && log "Removed PHP-FPM socket: $PHP_RUN_DIR/php-fpm.sock"
+  [ -d "$BREW_PREFIX/var/log/php-fpm" ] && sudo rm -rf "$BREW_PREFIX/var/log/php-fpm" && log "Purged PHP-FPM log dir: $BREW_PREFIX/var/log/php-fpm"
   [ -d "$USER_HOME/Library/Logs/Homebrew/php" ] && rm -rf "$USER_HOME/Library/Logs/Homebrew/php" && log "Purged Homebrew PHP logs: $USER_HOME/Library/Logs/Homebrew/php"
   [ -f "/Library/LaunchDaemons/homebrew.mxcl.php.plist" ] && sudo rm -f "/Library/LaunchDaemons/homebrew.mxcl.php.plist" && log "Removed LaunchDaemon: /Library/LaunchDaemons/homebrew.mxcl.php.plist"
   [ -f "$USER_HOME/Library/LaunchAgents/homebrew.mxcl.php.plist" ] && rm -f "$USER_HOME/Library/LaunchAgents/homebrew.mxcl.php.plist" && log "Removed LaunchAgent: $USER_HOME/Library/LaunchAgents/homebrew.mxcl.php.plist"
+  [ -L "$BREW_PREFIX/var/homebrew/linked/php" ] && sudo rm -f "$BREW_PREFIX/var/homebrew/linked/php" && log "Removed brew linked symlink for php"
 
   # --- MySQL purge ---
   MYSQL_CONF_FILE="$BREW_PREFIX/etc/my.cnf"
@@ -158,6 +160,9 @@ if [ "$PURGE" = "true" ]; then
   [ -d "$USER_HOME/Library/Logs/Homebrew/mysql" ] && rm -rf "$USER_HOME/Library/Logs/Homebrew/mysql" && log "Purged Homebrew MySQL logs: $USER_HOME/Library/Logs/Homebrew/mysql"
   [ -f "/Library/LaunchDaemons/homebrew.mxcl.mysql.plist" ] && sudo rm -f "/Library/LaunchDaemons/homebrew.mxcl.mysql.plist" && log "Removed LaunchDaemon: /Library/LaunchDaemons/homebrew.mxcl.mysql.plist"
   [ -f "$USER_HOME/Library/LaunchAgents/homebrew.mxcl.mysql.plist" ] && rm -f "$USER_HOME/Library/LaunchAgents/homebrew.mxcl.mysql.plist" && log "Removed LaunchAgent: $USER_HOME/Library/LaunchAgents/homebrew.mxcl.mysql.plist"
+  MYSQL_RUN_DIR="$BREW_PREFIX/var/run/mysqld"
+  [ -d "$MYSQL_RUN_DIR" ] && sudo rm -rf "$MYSQL_RUN_DIR" && log "Purged MySQL run dir: $MYSQL_RUN_DIR"
+  [ -L "$BREW_PREFIX/var/homebrew/linked/mysql" ] && sudo rm -f "$BREW_PREFIX/var/homebrew/linked/mysql" && log "Removed brew linked symlink for mysql"
   # Remove all managed vhosts recorded by installer
   remove_all_managed_vhosts
 fi
