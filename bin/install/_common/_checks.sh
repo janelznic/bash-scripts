@@ -21,8 +21,8 @@ _run_check() {
   check_result "$label" "$ok" "$detail"
 }
 
-# Section header
-_section() { echo ""; echo "=== $1 ==="; }
+# Section header (no-op to avoid headings)
+_section() { :; }
 
 # macOS (Homebrew) MAMP checks
 check_macos_mamp_state() {
@@ -62,6 +62,19 @@ check_macos_mamp_state() {
     rm -f /tmp/_brew_services_$$ || true
   fi
   _run_check "httpd service $( [ "$mode" = installed ] && echo listed/active || echo stopped/absent )" "$svc_httpd" "$expect_present" "Service state differs"
+  # launchctl disabled states and process presence
+  local lc_out
+  lc_out=$(launchctl print-disabled system 2>/dev/null || true)
+  local org_disabled=0 brew_disabled=0
+  echo "$lc_out" | grep -q '"org.apache.httpd" => disabled' && org_disabled=1 || org_disabled=0
+  echo "$lc_out" | grep -q '"homebrew.mxcl.httpd" => disabled' && brew_disabled=1 || brew_disabled=0
+  local expect_disabled
+  if [ "$mode" = "installed" ]; then expect_disabled=0; else expect_disabled=1; fi
+  _run_check "org.apache.httpd disabled (launchctl)" "$org_disabled" "$expect_disabled" "launchctl system state differs for org.apache.httpd"
+  _run_check "homebrew.mxcl.httpd disabled (launchctl)" "$brew_disabled" "$expect_disabled" "launchctl system state differs for homebrew.mxcl.httpd"
+  local httpd_proc=0
+  if pgrep -x httpd >/dev/null 2>&1; then httpd_proc=1; else httpd_proc=0; fi
+  _run_check "httpd process $( [ "$mode" = installed ] && echo running || echo not running )" "$httpd_proc" "$expect_present" "Process presence differs"
   _section "php"
   _run_check "php binary $( [ "$mode" = installed ] && echo present || echo absent )" \
     "$(bin_in_brew_present php)" "$expect_present" "Found in PATH"
@@ -104,6 +117,7 @@ check_macos_mamp_state() {
   [ -e "$HTTPD_LOG_DIR" ] && httpd_logs_present=1
   [ -e "$MYSQL_DATA_DIR" ] && mysql_data_present=1
   # httpd paths
+  _section "httpd"
   _run_check "httpd logs $( [ "$mode" = installed ] && echo present || echo removed )" "$httpd_logs_present" "$expect_present" "Exists: $HTTPD_LOG_DIR"
   # httpd config directory presence (Homebrew)
   local HTTPD_CONF_DIR="$BREW_PREFIX/etc/httpd"
@@ -120,6 +134,7 @@ check_macos_mamp_state() {
   _run_check "httpd run dir $( [ "$mode" = installed ] && echo present || echo removed )" "$httpd_run_present" "$expect_present" "Exists: $HTTPD_RUN_DIR"
 
   # php config dir and fpm socket
+  _section "php"
   local PHP_CONF_DIR="$BREW_PREFIX/etc/php"
   local PHP_FPM_SOCK="$BREW_PREFIX/var/run/php-fpm.sock"
   local php_conf_present=0 php_sock_present=0
@@ -128,6 +143,7 @@ check_macos_mamp_state() {
   _run_check "php config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$php_conf_present" "$expect_present" "Exists: $PHP_CONF_DIR"
   _run_check "php-fpm socket $( [ "$mode" = installed ] && echo present || echo removed )" "$php_sock_present" "$expect_present" "Exists: $PHP_FPM_SOCK"
 
+  _section "mysql"
   _run_check "MySQL data dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mysql_data_present" "$expect_present" "Exists: $MYSQL_DATA_DIR"
   local MYSQL_CONF_FILE="$BREW_PREFIX/etc/my.cnf"
   local MYSQL_CONF_DIR="$BREW_PREFIX/etc/my.cnf.d"
@@ -141,11 +157,13 @@ check_macos_mamp_state() {
   _run_check "phpMyAdmin directory $( [ "$mode" = installed ] && echo present || echo removed )" "$pma_present" "$expect_present" "Exists: $PMA_DIR"
 
   # Hosts entry (httpd-related)
+  _section "httpd"
   local hosts_present=0
   if has_hosts_entry "test.localhost"; then hosts_present=1; else hosts_present=0; fi
   _run_check "Hosts entry $( [ "$mode" = installed ] && echo present || echo removed ) (test.localhost)" "$hosts_present" "$expect_present" "Entry differs"
 
   # Managed vhosts
+  _section "httpd"
   local managed_present=0
   local mf="$(APACHE_USER_VHOSTS_DIR)/.managed_vhosts"
   if [ -f "$mf" ]; then
@@ -236,9 +254,12 @@ check_debian_lamp_state() {
   [ -d "/etc/mysql" ] && mysql_confdir_present=1
   [ -d "/etc/mariadb" ] && mariadb_confdir_present=1
   [ -d "/etc/phpmyadmin" ] && phpmyadmin_confdir_present=1
+  _section "httpd"
   _run_check "Apache logs $( [ "$mode" = installed ] && echo present || echo removed )" "$apache_logs_present" "$expect_present" "Exists: /var/log/apache2"
   _run_check "Apache config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$apache_confdir_present" "$expect_present" "Exists: /etc/apache2"
+  _section "php"
   _run_check "PHP config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$php_confdir_present" "$expect_present" "Exists: /etc/php"
+  _section "mysql"
   _run_check "MySQL data dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mysql_data_present" "$expect_present" "Exists: /var/lib/mysql"
   _run_check "MariaDB data dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mariadb_data_present" "$expect_present" "Exists: /var/lib/mariadb"
   _run_check "MySQL config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$mysql_confdir_present" "$expect_present" "Exists: /etc/mysql"
@@ -248,11 +269,13 @@ check_debian_lamp_state() {
   _run_check "phpMyAdmin config dir $( [ "$mode" = installed ] && echo present || echo removed )" "$phpmyadmin_confdir_present" "$expect_present" "Exists: /etc/phpmyadmin"
 
   # Hosts entry
+  _section "httpd"
   local hosts_present=0
   if has_hosts_entry "test.localhost"; then hosts_present=1; else hosts_present=0; fi
   _run_check "Hosts entry $( [ "$mode" = installed ] && echo present || echo removed ) (test.localhost)" "$hosts_present" "$expect_present" "Entry differs"
 
   # Managed vhosts
+  _section "httpd"
   local managed_present=0
   local mf="$(APACHE_USER_VHOSTS_DIR)/.managed_vhosts"
   if [ -f "$mf" ]; then

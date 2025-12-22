@@ -57,8 +57,56 @@ if [ "$CHECK_ONLY" = "true" ]; then
   exit 0
 fi
 
-# Stop services (run as Homebrew user)
-brew_services_as_user stop httpd || true
+# Stop any running Apache/httpd instances (Homebrew or system)
+stop_httpd_all() {
+  # First stop via Homebrew services if present
+  brew_services_as_user stop httpd || true
+
+  # Boot out Homebrew LaunchDaemons/Agents if loaded
+  if [ -f "/Library/LaunchDaemons/homebrew.mxcl.httpd.plist" ]; then
+    sudo launchctl bootout system "/Library/LaunchDaemons/homebrew.mxcl.httpd.plist" || true
+  fi
+  if [ -n "${SUDO_USER:-}" ]; then
+    local USER_HOME; USER_HOME=$(eval echo "~$SUDO_USER")
+    if [ -f "$USER_HOME/Library/LaunchAgents/homebrew.mxcl.httpd.plist" ]; then
+      launchctl bootout "gui/$(id -u "$SUDO_USER")" "$USER_HOME/Library/LaunchAgents/homebrew.mxcl.httpd.plist" || true
+    fi
+  else
+    if [ -f "$HOME/Library/LaunchAgents/homebrew.mxcl.httpd.plist" ]; then
+      launchctl bootout "gui/$(id -u)" "$HOME/Library/LaunchAgents/homebrew.mxcl.httpd.plist" || true
+    fi
+  fi
+
+  # Boot out macOS system Apache if loaded
+  if [ -f "/System/Library/LaunchDaemons/org.apache.httpd.plist" ]; then
+    sudo launchctl bootout system "/System/Library/LaunchDaemons/org.apache.httpd.plist" || true
+  fi
+
+  # Try graceful stop via apachectl (system)
+  if [ -x "/usr/sbin/apachectl" ]; then
+    sudo /usr/sbin/apachectl -k stop || true
+  fi
+  # Try graceful stop via brew apachectl if exists
+  BREW_PREFIX=$(brew_prefix)
+  if [ -x "$BREW_PREFIX/bin/apachectl" ]; then
+    "$BREW_PREFIX/bin/apachectl" -k stop || true
+  elif [ -x "$BREW_PREFIX/sbin/apachectl" ]; then
+    "$BREW_PREFIX/sbin/apachectl" -k stop || true
+  fi
+
+  # Fallback: kill any remaining httpd processes
+  if pgrep -x httpd >/dev/null 2>&1; then
+    sudo pkill -x httpd || true
+    sleep 1
+  fi
+  if pgrep -x httpd >/dev/null 2>&1; then
+    sudo pkill -9 -x httpd || true
+  fi
+}
+
+stop_httpd_all
+
+# Stop PHP and MySQL services (run as Homebrew user)
 brew_services_as_user stop php || true
 brew_services_as_user stop mysql || true
 
@@ -136,6 +184,10 @@ if [ "$PURGE" = "true" ]; then
     USER_HOME="$HOME"
   fi
   [ -f "$USER_HOME/Library/LaunchAgents/homebrew.mxcl.httpd.plist" ] && rm -f "$USER_HOME/Library/LaunchAgents/homebrew.mxcl.httpd.plist" && log "Removed LaunchAgent: $USER_HOME/Library/LaunchAgents/homebrew.mxcl.httpd.plist"
+  # Best-effort removal of any lingering loaded instances
+  if [ -f "/System/Library/LaunchDaemons/org.apache.httpd.plist" ]; then
+    sudo launchctl bootout system "/System/Library/LaunchDaemons/org.apache.httpd.plist" || true
+  fi
   # Remove Homebrew formula logs for httpd
   [ -d "$USER_HOME/Library/Logs/Homebrew/httpd" ] && rm -rf "$USER_HOME/Library/Logs/Homebrew/httpd" && log "Purged Homebrew httpd logs: $USER_HOME/Library/Logs/Homebrew/httpd"
   # Remove any lingering brew-linked markers
