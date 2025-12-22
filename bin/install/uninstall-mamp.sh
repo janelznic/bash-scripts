@@ -136,3 +136,9 @@ print_summary
 echo "macOS MAMP uninstall complete."
 echo "- Services stopped: httpd, php, mysql"
 echo "- Purge: $PURGE"
+
+# Post-uninstall verification
+if [ "$CHECK_ONLY" != "true" ]; then
+  log "Provádím post-uninstall ověření (--check)."
+  "$SCRIPT_DIR/uninstall-mamp.sh" --check
+fi

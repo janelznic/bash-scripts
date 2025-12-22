@@ -68,3 +68,9 @@ echo "Debian LAMP setup complete."
 echo "- Apache includes: $(APACHE_USER_VHOSTS_DIR)/*.conf"
 echo "- Test site: http://test.localhost (added to /etc/hosts)"
 echo "- phpMyAdmin: http://localhost/phpmyadmin"
+
+# Post-install verification
+if [ "$CHECK_ONLY" != "true" ]; then
+  log "Provádím post-install ověření (--check)."
+  "$SCRIPT_DIR/install-lamp.sh" --check
+fi

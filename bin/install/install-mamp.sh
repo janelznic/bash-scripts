@@ -53,7 +53,7 @@ PHPMYADMIN_DIR=$(install_phpmyadmin_mac)
 # Prepare vhosts and test site
 create_user_vhosts_dir
 create_test_vhost_structure
-write_test_vhost_conf
+write_test_vhost_conf "$APACHE_PORT"
 symlink_test_vhost_into_user_dir
 add_hosts_entry_if_missing
 
@@ -68,3 +68,9 @@ echo "macOS MAMP setup complete."
 echo "- Apache config includes: $(APACHE_USER_VHOSTS_DIR)/*.conf"
 echo "- Test site: http://test.localhost (added to /etc/hosts)"
 echo "- phpMyAdmin: http://localhost/phpmyadmin"
+
+# Post-install verification
+if [ "$CHECK_ONLY" != "true" ]; then
+  log "Running post-install verification (--check)."
+  "$SCRIPT_DIR/install-mamp.sh" --check
+fi

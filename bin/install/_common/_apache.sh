@@ -25,13 +25,14 @@ create_test_vhost_structure() {
 
 write_test_vhost_conf() {
   local base; base="$(TEST_VHOST_BASE)"
+  local port="${1:-80}"
   local docroot="$base/wwwroot"
   local logs="$base/log"
   local conf="$base/conf/httpd.conf"
   local server_name="test.localhost"
 
   cat > "$conf" <<EOF
-<VirtualHost *:80>
+<VirtualHost *:$port>
     ServerName $server_name
     ServerAlias $server_name
     DocumentRoot "$docroot"
